@@ -1,3 +1,6 @@
+// Content file -- can access information on webpage
+// Listen to text selection event
+
 "use strict";
 
 $('div').mouseup(function() {
@@ -41,7 +44,7 @@ window.addEventListener("message", function(event) {
 		if (this.readyState === this.DONE) {
 			if (document.contains(document.getElementById("share-snippet"))) {
 				if (this.status === 200) {
-		        document.getElementById("share-snippet").innerHTML = '<div class="speech-bubble"><div class="share-inside">'+this.responseText+'</div></div>';
+		        	document.getElementById("share-snippet").innerHTML = '<div class="speech-bubble"><div class="share-inside">'+this.responseText+'</div></div>';
 				} else {
 					document.getElementById("share-snippet").innerHTML = '<div class="speech-bubble"><div class="share-inside">Received a 404: Word not found</div></div>';
 				}

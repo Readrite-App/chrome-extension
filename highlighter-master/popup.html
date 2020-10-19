@@ -6,6 +6,7 @@
         <link rel="stylesheet" type="text/css" href="css/bootstrap-toggle.css">
         <link rel="stylesheet" type="text/css" href="css/popup.css">
         <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="fontawesome/css/all.css">
     </head>
     <body>
         <div id="popup" class="px-3 pt-1 pb-3">
@@ -17,15 +18,43 @@
                     <input type="checkbox" checked  data-height="30" data-toggle="toggle">
                 </div>
             </div>
-            <div class="row mt-3">
-                <div id="loading" class="col-12 text-center">
+            <hr />
+            <div id="loading" class="row text-center">
+                <div class="col-12">
                     <p>Loading analysis...</p>
                     <img id="loading-spinner" src="https://i.imgur.com/8Wx0oPN.gif" />
                 </div>
-                <div id="content" class="col-12 d-none">
-                    <hr />
-                    <p># of Annotations: <strong>14</strong></p>
-                    <p>Source Bias: <strong>Leans Left</strong>
+            </div>
+            <div id="content" class="d-none">
+                <div class="row">
+                    <div class="col-12">
+                        <p><strong>14</strong> Annotations Found</p>
+                        <p><strong>4509</strong> Readers in Past 24hrs</p>
+                    </div>
+                </div>
+                <hr class="my-1" />
+                <div class="row mt-3">
+                    <div class="col-6 text-center">
+                        <img id="political-gauge" src="https://static.politifact.com/politifact/rulings/meter-mostly-false.jpg">
+                        <p>Source Bias</p>
+                    </div>
+                    <div class="col-6 text-center">
+                        <img id="political-gauge" src="https://static.politifact.com/politifact/rulings/meter-mostly-false.jpg">
+                        <p>Author Bias</p>
+                    </div>
+                </div>
+                <hr class="my-1" />
+                <div class="row">
+                    <div class="col-12 text-center my-1">
+                        <p><em>Share this Article</em></p>
+                    </div>
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <i class="fab fa-whatsapp"></i>
+                        <i class="fab fa-facebook"></i>
+                        <i class="fab fa-twitter"></i>
+                        <i class="fab fa-linkedin"></i>
+                        <i class="fas fa-envelope"></i>
+                    </div>
                 </div>
             </div>
         </div>

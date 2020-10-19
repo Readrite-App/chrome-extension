@@ -1,5 +1,6 @@
-setTimeout(function() { $("#loading").hide() }, 2000);
-setTimeout(function() { $("#content").removeClass('d-none') }, 2000);
+const delay = 0;
+setTimeout(function() { $("#loading").hide() }, delay);
+setTimeout(function() { $("#content").removeClass('d-none') }, delay);
 
 
 var backgroundPage = chrome.extension.getBackgroundPage();

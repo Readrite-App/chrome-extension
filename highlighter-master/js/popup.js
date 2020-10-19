@@ -1,4 +1,6 @@
-"use strict";
+setTimeout(function() { $("#loading").hide() }, 2000);
+setTimeout(function() { $("#content").removeClass('d-none') }, 2000);
+
 
 var backgroundPage = chrome.extension.getBackgroundPage();
 

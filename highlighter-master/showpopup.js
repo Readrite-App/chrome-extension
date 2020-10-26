@@ -1,3 +1,6 @@
+// Content file -- can access information on webpage
+// Listen to text selection event
+
 "use strict";
 
 $('div').mouseup(function() {
@@ -5,7 +8,7 @@ $('div').mouseup(function() {
 });
 
 function getSelectedText() {
-  
+
 
 	// If there is already a popup dialog, remove it
     if (document.contains(document.getElementById("share-snippet"))) {

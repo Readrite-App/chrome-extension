@@ -1,47 +1,68 @@
+<!-- HTML that shows when click on Extension button in Chrome toolbar -->
 <!doctype html>
 <html>
     <head>
-        <title>Highlighter</title>
-        <link rel="stylesheet" type="text/css" href="popup.css">
+        <title>ReadRite</title>
+        <link rel="stylesheet" type="text/css" href="css/bootstrap-toggle.css">
+        <link rel="stylesheet" type="text/css" href="css/popup.css">
+        <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="fontawesome/css/all.css">
     </head>
     <body>
-        <div id="popup">
-            <div id='refresh-warning'><div><b>Refresh</b> your pages after installing or updating this extension!</div><div id='close-warning'>x</div></div>
-            <button id="highlight" title="Toggle the use of the highlighter tool">Toggle Cursor</button>
-            <div id="highlights-list-container">
-                <h2>Highlights on this page:</h2>
-                <ul id="highlights-list">
-                    <li id='no-highlights-message'>There are no highlights on this page</li>
-                </ul>
-                <button id="copy-highlights" title="Copy all highlights on the page to the clipboard">Copy All</button>
-                <button id="remove-highlights" title="Remove all highlights on the page">Remove All</button>
-                <div id='remove-ask-confirmation'>
-                    <div><b>Are you sure?</b> <em>This will permanently delete all highlights on this page.</em></div>
-                    <button id="remove-confirm">Delete</button>
-                    <button id="remove-cancel">Cancel</button>
+        <div id="popup" class="px-3 pt-1 pb-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <img id="logo" src="https://static.wixstatic.com/media/5133d9_b8b55f31853d49f5bc397daecd43d057~mv2.png/v1/crop/x_43,y_6,w_565,h_299/fill/w_116,h_61,al_c,q_85,usm_0.66_1.00_0.01/readrite.webp" />
+                </div>
+                <div>
+                    <input type="checkbox" checked  data-height="30" data-toggle="toggle">
                 </div>
             </div>
-            <div id="colors">
-                <label class="selected" title="Change highlight color">
-                    <input type="radio" checked="checked" name="color" value="yellow" />
-                    <span></span>
-                </label>
-                <label title="Change highlight color">
-                    <input type="radio" name="color" value="cyan" />
-                    <span></span>
-                </label>
-                <label title="Change highlight color">
-                    <input type="radio" name="color" value="lime" />
-                    <span></span>
-                </label>
-                <label title="Change highlight color">
-                    <input type="radio" name="color" value="magenta" />
-                    <span></span>
-                </label>
+            <hr />
+            <div id="loading" class="row text-center">
+                <div class="col-12">
+                    <p>Loading analysis...</p>
+                    <img id="loading-spinner" src="https://i.imgur.com/8Wx0oPN.gif" />
+                </div>
             </div>
-            <div id="shortcut-help"><span id="shortcut-text">Use the shortcut '<span id="highlight-command"></span>' to highlight straight from your keyboard!</span> Change it <a href="#" id="shortcut-link">here</a>.</div>
+            <div id="content" class="d-none">
+                <div class="row">
+                    <div class="col-12">
+                        <p><strong>14</strong> Annotations Found</p>
+                        <p><strong>4509</strong> Readers in Past 24hrs</p>
+                    </div>
+                </div>
+                <hr class="my-1" />
+                <div class="row mt-3">
+                    <div class="col-6 text-center">
+                        <img id="political-gauge" src="https://static.politifact.com/politifact/rulings/meter-mostly-false.jpg">
+                        <p>Source Bias</p>
+                    </div>
+                    <div class="col-6 text-center">
+                        <img id="political-gauge" src="https://static.politifact.com/politifact/rulings/meter-mostly-false.jpg">
+                        <p>Author Bias</p>
+                    </div>
+                </div>
+                <hr class="my-1" />
+                <div class="row">
+                    <div class="col-12 text-center my-1">
+                        <p><em>Share this Article</em></p>
+                    </div>
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <i class="fab fa-whatsapp"></i>
+                        <i class="fab fa-facebook"></i>
+                        <i class="fab fa-twitter"></i>
+                        <i class="fab fa-linkedin"></i>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <script src="popup.js"></script>
+        <script src="js/jquery-3.5.1.min.js"></script>
+        <script src="js/popup.js"></script>
+        <script src="js/bootstrap-toggle.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+
     </body>
 </html>

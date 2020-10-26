@@ -18,15 +18,14 @@ chrome.storage.sync.get('color', (values) => {
 // Add Keyboard shortcut
 chrome.commands.onCommand.addListener(function(command) {
     if (command === "execute-highlight") {
-        trackEvent('highlight-source', 'keyboard-shortcut');
         highlightText();
     }
 });
 
 // Listen to messages from content scripts
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    chrome.browserAction.setIcon({ path: "images/loading.png" });
     if (request.action && request.action == 'highlight') {
-        trackEvent('highlight-source', 'highlighter-cursor');
         highlightText();
     } else if (request.action && request.action == 'track-event') {
         if (request.trackCategory && request.trackAction) {
@@ -36,32 +35,28 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 });
 
 function highlightTextFromContext() {
-    trackEvent('highlight-source', 'context-menu');
     highlightText();
 }
 
 function highlightText() {
-    trackEvent('highlight-action', 'highlight');
     chrome.tabs.executeScript({file: 'contentScripts/highlight.js'});
 }
 
 function toggleHighlighterCursorFromContext() {
-    trackEvent('toggle-cursor-source', 'context-menu');
+    console.log("HE");
     toggleHighlighterCursor();
 }
 
 function toggleHighlighterCursor() {
-    trackEvent('highlight-action', 'toggle-cursor');
+    console.log("HO");
     chrome.tabs.executeScript({file: 'contentScripts/toggleHighlighterCursor.js'});
 }
 
 function removeHighlights() {
-    trackEvent('highlight-action', 'clear-all');
     chrome.tabs.executeScript({file: 'contentScripts/removeHighlights.js'});
 }
 
 function showHighlight(highlightId) {
-    trackEvent('highlight-action', 'show-highlight');
 
     chrome.tabs.executeScript({
         code: `var highlightId = ${highlightId};`
@@ -71,18 +66,11 @@ function showHighlight(highlightId) {
 }
 
 function changeColorFromContext(info) {
-    trackEvent('color-change-source', 'context-menu');
     changeColor(info.menuItemId);
 }
 
 function changeColor(color) {
-    trackEvent('color-changed-to', color);
     chrome.storage.sync.set({ color: color });
-
     // Also update the context menu
     chrome.contextMenus.update(color, { checked: true });
-}
-
-function trackEvent(category, action) {
-    _gaq.push(['_trackEvent', category, action]);
 }

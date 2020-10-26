@@ -1,5 +1,3 @@
 *.crx
 .idea/
 
-analytics.js
-analytics-test.js

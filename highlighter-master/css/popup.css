@@ -1,0 +1,26 @@
+ body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+#popup {
+    min-width: 200px;
+}
+
+#logo {
+    height: 40px;
+    width: auto;
+}
+
+#popup p {
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+#loading-spinner {
+    width: 100%;
+}
+
+#political-gauge {
+    width: 90%;
+}

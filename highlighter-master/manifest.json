@@ -24,7 +24,7 @@
             "matches": ["<all_urls>"],
             "js": ["jquery-2.1.3.min.js", "utils/storageManager.js", "utils/highlight.js", "utils/errorManager.js",
                    "utils/hoverTools.js", "contentScripts/loadHighlights.js", "contentScripts/highlighterCursor.js", "showpopup.js"],
-            "css": ["hoverTools.css"],
+            "css": ["hoverTools.css", "showpopup.css"],
             "all_frames": true
         }
     ],

@@ -5,24 +5,35 @@ $('div').mouseup(function() {
 });
 
 function getSelectedText() {
-	// If there is already a share dialog, remove it
+  
+
+	// If there is already a popup dialog, remove it
     if (document.contains(document.getElementById("share-snippet"))) {
         document.getElementById("share-snippet").remove();
     }
 
-
+  // Add a new popup dialog
     if(window.getSelection().toString().trim().length > 0) {
     	const selection = encodeURIComponent(window.getSelection().toString()).replace(/[!'()*]/g, escape);
     	var scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement || document.body.parentNode || document.body).scrollTop;
-    	const posX = event.clientX - 110;
-        const posY = event.clientY + 20 + scrollTop;
-        document.body.insertAdjacentHTML('beforeend', '<div id="share-snippet" style="position: absolute; top: '+posY+'px; left: '+posX+'px;"><div class="speech-bubble"><div class="share-inside"><a href="javascript:void(0);" onClick=\'window.postMessage({ action: "highlight" }, "*");\'>HIGHLIGHT</a></div></div></div>');
+    	const posX = event.clientX - 30;
+      const posY = event.clientY - 40 + scrollTop;
+
+      var span = document.createElement("span");
+      span.id = selection;
+
+      if (window.getSelection) {
+          var sel = window.getSelection();
+          if (sel.rangeCount) {
+              var range = sel.getRangeAt(0).cloneRange();
+              range.surroundContents(span);
+              sel.removeAllRanges();
+              sel.addRange(range);
+          }
+      }
+
+      document.body.insertAdjacentHTML('beforeend', '<div id="share-snippet" style="position: absolute; top: '+posY+'px; left: '+posX+'px;"><div class="speech-bubble"><div class="share-inside"><a href="javascript:void(0);" onClick=\'window.postMessage({ action: "highlight", spanid: "' + selection + '" }, "*");\'></a></div></div></div>');
     }
-        // return window.getSelection().toString();
-    // } else if (document.selection) {
-    //     return document.selection.createRange().text;
-    // }
-    // return '';
 }
 
 window.addEventListener("message", function(event) {
@@ -40,11 +51,10 @@ window.addEventListener("message", function(event) {
 	xhr.addEventListener("readystatechange", function () {
 		if (this.readyState === this.DONE) {
 			if (document.contains(document.getElementById("share-snippet"))) {
-				if (this.status === 200) {
-		        document.getElementById("share-snippet").innerHTML = '<div class="speech-bubble"><div class="share-inside">'+this.responseText+'</div></div>';
-				} else {
-					document.getElementById("share-snippet").innerHTML = '<div class="speech-bubble"><div class="share-inside">Received a 404: Word not found</div></div>';
-				}
+        document.getElementById("share-snippet").remove();
+        document.getElementById(event.data.spanid).style.background = "yellow";
+        document.getElementById(event.data.spanid).class = "tooltip-top";
+        document.getElementById(event.data.spanid).setAttribute("data-tooltip", this.responseText);
 			}
 		}
 	});
@@ -55,58 +65,5 @@ window.addEventListener("message", function(event) {
 
 	xhr.send(data);
 
-     // broadcasts it to rest of extension, or could just broadcast event.data.payload...
-  } // else ignore messages seemingly not sent to yourself
+  }
 }, false);
-
-
-// const article = document.getElementById("article");
-
-
-// // We could also add the  'touchend' event for touch devices, but since 
-// // most iOS/Android browsers already show a dialog when you select 
-// // text (often with a Share option) we'll skip that
-// article.addEventListener('mouseup', handlerFunction, false);
-
-// // Mouse up event handler function
-// function handlerFunction(event) {
-    
-//     // If there is already a share dialog, remove it
-//     if (document.contains(document.getElementById("share-snippet"))) {
-//         document.getElementById("share-snippet").remove();
-//     }
-    
-//     // Check if any text was selected
-//     if(window.getSelection().toString().length > 0) {
-
-//         // Get selected text and encode it
-//         const selection = encodeURIComponent(window.getSelection().toString()).replace(/[!'()*]/g, escape);
-        
-//         // Find out how much (if any) user has scrolled
-//         var scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement || document.body.parentNode || document.body).scrollTop;
-        
-//         // Get cursor position
-//         const posX = event.clientX - 110;
-//         const posY = event.clientY + 20 + scrollTop;
-      
-//         // Create Twitter share URL
-//         const shareUrl = 'http://twitter.com/share?text='+selection+'&url=https://awik.io';
-        
-//         // Append HTML to the body, create the "Tweet Selection" dialog
-//         document.body.insertAdjacentHTML('beforeend', '<div id="share-snippet" style="position: absolute; top: '+posY+'px; left: '+posX+'px;"><div class="speech-bubble"><div class="share-inside"><a href="javascript:void(0);" onClick=\'window.open(\"'+shareUrl+'\", \"\", \"menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600\");\'>TWEET SELECTION</a></div></div></div>');
-//     }
-// }
-
-
-
-
-
-
-
-// console.log("working")
-// var s = document.createElement('script');
-// s.src = chrome.extension.getURL('sharect-master/dist/sharect.js');
-// (document.head||document.documentElement).appendChild(s);
-// s.onload = function() {
-//     s.parentNode.removeChild(s);
-// };

@@ -56,6 +56,7 @@ function onHighlightMouseEnterOrClick(e) {
     // Remove any previous borders and add a border to the highlight (by id) to clearly see what was selected
     $('.highlighter--hovered').removeClass('highlighter--hovered');
     $(`.highlighter--highlighted[data-highlight-id='${newHighlightId}']`).addClass('highlighter--hovered');
+    console.log("HI");
 }
 
 function onHighlightMouseLeave(e) {

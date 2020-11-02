@@ -11,7 +11,6 @@ var radios = document.getElementsByName('color');
 var shortcutLink = document.getElementById('shortcut-link');
 var highlightCommandEl = document.getElementById('highlight-command');
 var shortcutTextEl = document.getElementById('shortcut-text');
-var refreshWarningEl = document.getElementById('refresh-warning');
 var closeWarningBtn = document.getElementById('close-warning');
 var askConfirmationEl = document.getElementById('remove-ask-confirmation');
 var removeConfirmBtn = document.getElementById('remove-confirm');
@@ -44,18 +43,6 @@ function toggleHighlighterCursor() {
     backgroundPage.trackEvent('toggle-cursor-source', 'popup');
     backgroundPage.toggleHighlighterCursor();
     window.close();
-}
-
-(function preventWarning() {
-    // Do not show the warning message on future popup window opens after a user has clicked the 'x' button once
-    if (window.localStorage.getItem('refresh-warning-closed')) {
-        refreshWarningEl.remove();
-    }
-})(); // Automatically trigger. function added for clarity only
-
-function closeWarning() {
-    refreshWarningEl.remove();
-    window.localStorage.setItem('refresh-warning-closed', true);
 }
 
 function copyHighlights() {

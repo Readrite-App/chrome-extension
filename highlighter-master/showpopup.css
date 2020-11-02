@@ -25,7 +25,7 @@
 }
 
 .share-inside {
-	background: url('https://i.ibb.co/YRFzdjh/magnifying-glass-1.png');
+	background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Magnifying_glass_icon.svg/768px-Magnifying_glass_icon.png');
 	background-repeat: no-repeat;
 	background-position: center;
 	background-size: 21px 21px;
@@ -326,4 +326,88 @@
 .tooltip-right:after {
   margin-left: 0;
   margin-bottom: -16px;
+}
+
+/* HoverTools.html */
+.tippy-box {
+  max-width: 550px !important;
+  max-width: 100% !important;
+  background: white !important;
+  border: 2px solid black !important;
+  box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+}
+.tippy-content {
+  width: 550px !important;
+  max-width: 100% !important;
+  font-family: "Arial" !important;
+}
+#information-popup {
+  padding: 5px;
+  color: black;
+}
+#information-popup em {
+  font-style: italic;
+}
+#information-popup a {
+  text-decoration: underline;
+  color: blue;
+}
+#information-popup a:hover {
+  color: rgb(0, 191, 255);
+}
+#information-popup-title {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  border-bottom: 1px solid grey;
+  padding-bottom: 8px;
+}
+#information-popup-title img {
+  height: 20px;
+}
+#information-popup-content {
+  padding: 0 10px 10px 0;
+}
+#information-popup-content h2 {
+  font-size: 15px;
+  margin-top: 10px;
+  margin-bottom: 2px;
+  font-weight: bold;
+}
+#information-popup-content .hover-tools-header {
+  display: flex;
+  align-items: center;
+}
+#information-popup-content .hover-tools-header-icon {
+  height: 20px;
+  width: 20px;
+  margin-right: 7px;
+}
+#information-popup-content .article-container {
+  display: flex;
+  align-items: center;
+}
+#information-popup-content .hover-tools-article-text {
+  font-size: 12px;
+  margin-left: 10px;
+}
+#information-popup-content .hover-tools-article-byline {
+  color: grey;
+}
+#information-popup-content .hover-tools-article-news-icon {
+  height: 60px;
+  width: 60px;
+  border-radius: 999px;
+}
+#information-popup-content p {
+  font-size: 12px;
+}
+#information-popup-content .similar-claims-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  margin-top: 5px;
+}
+#information-popup-content .similar-claims-article {
+  text-align: center;
 }

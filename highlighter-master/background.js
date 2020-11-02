@@ -15,22 +15,12 @@ chrome.storage.sync.get('color', (values) => {
     chrome.contextMenus.update(color, { checked: true });
 });
 
-// Add Keyboard shortcut
-chrome.commands.onCommand.addListener(function(command) {
-    if (command === "execute-highlight") {
-        highlightText();
-    }
-});
-
 // Listen to messages from content scripts
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    chrome.browserAction.setIcon({ path: "images/loading.png" });
+    // chrome.browserAction.setIcon({ path: "images/loading.png" });
+    console.log("ACTION:", request.action);
     if (request.action && request.action == 'highlight') {
         highlightText();
-    } else if (request.action && request.action == 'track-event') {
-        if (request.trackCategory && request.trackAction) {
-            trackEvent(request.trackCategory, request.trackAction)
-        }
     }
 });
 
@@ -43,12 +33,10 @@ function highlightText() {
 }
 
 function toggleHighlighterCursorFromContext() {
-    console.log("HE");
     toggleHighlighterCursor();
 }
 
 function toggleHighlighterCursor() {
-    console.log("HO");
     chrome.tabs.executeScript({file: 'contentScripts/toggleHighlighterCursor.js'});
 }
 

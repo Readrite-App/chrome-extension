@@ -76,13 +76,29 @@ window.addEventListener("message", function (event) {
 
 
 function makePopupHTML(data) {
+  // Parse data
+  const recommendedRead = {
+    'source' : 'AP',
+    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
+    'title' : 'Fake Video of Biden Circulates',
+		'url' : 'https://apnews.com',
+		'claim' : ' The video was shared on Twitter by a person who accused Biden of forgetting what state he was in. One version of the false video circulating on Twitter was viewed more than 1.1 million times in less than 24 hours',
+		'article_date' : '10/20/2020',
+		'source_bias' : 3,
+		'confidence' : 0.3,
+  };
+  const alternativeRead = {
+    'source' : 'Fox News',
+    'sourceIcon' : 'https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg',
+    'title' : 'Disinformation Abounds as Election Day Nears',
+		'url' : 'foxnews.com',
+		'claim' : '"He forgets where he\'s at, he forgets who he\'s running against, he forgets what he\'s running for," she said. Asked when Biden had forgotten who he was running against, she cited the misleading clip the Trump campaign had been pushing all',
+		'article_date' : '10/23/2020',
+		'source_bias' : 3,
+		'confidence' : 0.3,
+  };
+  // Return HTML
   return `<div id="information-popup">
-            <div id="information-popup-title">
-              <img 
-                src="https://static.wixstatic.com/media/5133d9_b8b55f31853d49f5bc397daecd43d057~mv2.png/v1/crop/x_43,y_6,w_565,h_299/fill/w_116,h_61,al_c,q_85,usm_0.66_1.00_0.01/readrite.webp"
-              />
-              Read Rite
-            </div>
             <div id="information-popup-content">
                 <h2 class="hover-tools-header">
                   <img 
@@ -90,20 +106,18 @@ function makePopupHTML(data) {
                     class="hover-tools-header-icon"
                   />
                   Recommended Read
+                  <div class="hover-tools-article-byline">
+                    ${recommendedRead.title} | ${recommendedRead.article_date}
+                  </div>
                 </h2>
                 <div class="article-container">
                     <img 
-                        src="https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png" 
+                        src="${recommendedRead.sourceIcon}" 
                         class="hover-tools-article-news-icon"
                     />
                     <div class="hover-tools-article-text">
-                        The video was shared on Twitter by a person who accused Biden of forgetting what state he was in.
-                        One version of the false video circulating on Twitter was viewed more than 1.1 million times in less than 24 hours...
-                        <a href="nytimes.com">Keep reading</a>
-                        <br />
-                        <div class="hover-tools-article-byline">
-                          Fake Video of Biden Circulates | October 20, 2020.
-                        </div>
+                        ${recommendedRead.claim}...
+                        <a href="${recommendedRead.url}">Keep reading</a>
                     </div>
                 </div>
                 <h2 class="hover-tools-header">
@@ -111,21 +125,19 @@ function makePopupHTML(data) {
                     src="https://static.thenounproject.com/png/331-200.png" 
                     class="hover-tools-header-icon"
                   />
-                  Alternative Perspective
+                  Alternative View
+                  <div class="hover-tools-article-byline">
+                    ${alternativeRead.title} | ${alternativeRead.article_date}
+                  </div>
                 </h2>
                 <div class="article-container">
                     <img
-                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg"
+                        src="${alternativeRead.sourceIcon}"
                         class="hover-tools-article-news-icon"
                     />
                     <div class="hover-tools-article-text">
-                        "He forgets where he's at, he forgets who he's running against, he forgets what he's running for," she said.
-                        Asked when Biden had forgotten who he was running against, she cited the misleading clip the Trump campaign had been pushing all...
-                        <a href="nytimes.com">Keep reading</a>
-                        <br />
-                        <div class="hover-tools-article-byline">
-                          <em>Disinformation Abounds as Election Day Nears</em> | October 23, 2020.
-                        </div>
+                        ${alternativeRead.claim}...
+                        <a href="${alternativeRead.url}">Keep reading</a>
                     </div>
                 </div> 
                 <h2 class="hover-tools-header">
@@ -133,35 +145,18 @@ function makePopupHTML(data) {
                     src="https://freeiconshop.com/wp-content/uploads/edd/checkmark-flat.png" 
                     class="hover-tools-header-icon"
                   />
-                  Claim Check
+                  Around the Web
                 </h2>
                 <p>Similar claims were found in the following articles:</p>
                 <div class="similar-claims-container">
-                  <div class="similar-claims-article">
-                    <img
-                      src="https://cdn.theorg.com/e0fa6f8e-398e-4680-a519-8d41aa29e02b_medium.jpg"
-                      class="hover-tools-article-news-icon"
-                    />
-                    <p>Article Title</p>
-                    <p>October 29, 2020</p>
-                  </div>
-                  <div class="similar-claims-article">
-                    <img
-                      src="https://1ridb82q22462hzl6811wfgg-wpengine.netdna-ssl.com/wp-content/uploads/2018/02/Slate-Logo.jpg"
-                      class="hover-tools-article-news-icon"
-                    />
-                    <p>Article Title</p>
-                    <p>October 4, 2020</p>
-                  </div>
-                  <div class="similar-claims-article">
-                    <img
-                      src="https://cdn.theorg.com/e0fa6f8e-398e-4680-a519-8d41aa29e02b_medium.jpg"
-                      class="hover-tools-article-news-icon"
-                    />
-                    <p>Article Title</p>
-                    <p>October 19, 2020</p>
-                  </div>
+                  
                 </div>
+            </div>
+            <div id="information-popup-footer">
+              <img 
+                src="https://static.wixstatic.com/media/5133d9_b8b55f31853d49f5bc397daecd43d057~mv2.png/v1/crop/x_43,y_6,w_565,h_299/fill/w_116,h_61,al_c,q_85,usm_0.66_1.00_0.01/readrite.webp"
+              />
+              Read Rite
             </div>
         </div>`;
 }

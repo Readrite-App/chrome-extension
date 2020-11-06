@@ -337,12 +337,12 @@
   box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
 }
 .tippy-content {
+  padding: 10px;
   width: 550px !important;
   max-width: 100% !important;
   font-family: "Arial" !important;
 }
 #information-popup {
-  padding: 5px;
   color: black;
 }
 #information-popup em {
@@ -355,23 +355,23 @@
 #information-popup a:hover {
   color: rgb(0, 191, 255);
 }
-#information-popup-title {
+#information-popup-footer {
   display: flex;
   align-items: center;
-  justify-content: end;
-  border-bottom: 1px solid grey;
-  padding-bottom: 8px;
+  justify-content: flex-end;
+  font-size: 10px;
+  color: grey;
 }
-#information-popup-title img {
+#information-popup-footer img {
   height: 20px;
 }
 #information-popup-content {
-  padding: 0 10px 10px 0;
+  padding: 0px;
 }
 #information-popup-content h2 {
-  font-size: 15px;
-  margin-top: 10px;
-  margin-bottom: 2px;
+  font-size: 14px;
+  margin-top: 5px;
+  margin-bottom: 3px;
   font-weight: bold;
 }
 #information-popup-content .hover-tools-header {
@@ -386,17 +386,23 @@
 #information-popup-content .article-container {
   display: flex;
   align-items: center;
+  padding-bottom: 20px;
 }
 #information-popup-content .hover-tools-article-text {
   font-size: 12px;
   margin-left: 10px;
 }
 #information-popup-content .hover-tools-article-byline {
+  margin-left: 5px;
+  padding-left: 5px;
+  border-left: 1px solid grey;
   color: grey;
+  font-size: 12px;
+  font-weight: normal;
 }
 #information-popup-content .hover-tools-article-news-icon {
-  height: 60px;
-  width: 60px;
+  height: 40px;
+  width: 40px;
   border-radius: 999px;
 }
 #information-popup-content p {

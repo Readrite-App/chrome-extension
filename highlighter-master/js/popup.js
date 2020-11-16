@@ -1,3 +1,12 @@
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+// This file contains the JS code for the popup
+// that appears when the "ReadRite" icon on the 
+// Chrome Toolbar (in the top right of the browser)
+// is clicked.
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+
 const delay = 0;
 setTimeout(function() { $("#loading").hide() }, delay);
 setTimeout(function() { $("#content").removeClass('d-none') }, delay);
@@ -13,9 +22,6 @@ var highlightCommandEl = document.getElementById('highlight-command');
 var shortcutTextEl = document.getElementById('shortcut-text');
 var closeWarningBtn = document.getElementById('close-warning');
 var askConfirmationEl = document.getElementById('remove-ask-confirmation');
-var removeConfirmBtn = document.getElementById('remove-confirm');
-var removeCancelBtn = document.getElementById('remove-cancel');
-var copyBtn = document.getElementById('copy-highlights');
 var highlightsListEl = document.getElementById('highlights-list');
 
 function askConfirmation() {
@@ -35,12 +41,10 @@ function removeHighlights() {
 }
 
 function colorChanged(color) {
-    backgroundPage.trackEvent('color-change-source', 'popup');
     backgroundPage.changeColor(color);
 }
 
 function toggleHighlighterCursor() {
-    backgroundPage.trackEvent('toggle-cursor-source', 'popup');
     backgroundPage.toggleHighlighterCursor();
     window.close();
 }
@@ -50,49 +54,17 @@ function copyHighlights() {
     document.execCommand("copy");
     window.getSelection().empty();
     
-    backgroundPage.trackEvent('highlight-action', 'copy-all');
 
     // Let the user know the copy went through
     var checkmarkEl = document.createElement('span');
     checkmarkEl.style.color = '#00ff00';
     checkmarkEl.innerHTML = ' &#10004;';
-    copyBtn.appendChild(checkmarkEl);
 }
-
-(function getHighlights() {
-    chrome.tabs.executeScript({file: 'contentScripts/getHighlights.js'}, (results) => {
-        if (!results || !Array.isArray(results) || results.length == 0) return;
-        if (results[0].length == 0) {
-            copyBtn.disabled = true;
-            removeHighlightsBtn.disabled = true;
-            return;
-        } 
-
-        var highlights = results[0];
-
-        // Clear previous list elements, but only if there is at least one otherwise leave the "empty" message
-        highlightsListEl.innerHTML = '';
-        
-        // Populate with new elements
-        for (var i = 0; i < highlights.length; i += 2) {
-            var newEl = document.createElement('li');
-            newEl.innerText = highlights[i + 1];
-            let highlightId = highlights[i];
-            newEl.addEventListener('click', (e) => {
-                backgroundPage.showHighlight(highlightId);
-            });
-            highlightsListEl.appendChild(newEl);
-        }
-    });
-})(); // Automatically trigger. function added for clarity only
 
 // Register Events
 highlightBtn.addEventListener('click', toggleHighlighterCursor);
 removeHighlightsBtn.addEventListener('click', askConfirmation);
 closeWarningBtn.addEventListener('click', closeWarning);
-removeConfirmBtn.addEventListener('click', removeHighlights);
-removeCancelBtn.addEventListener('click', closeConfirmation);
-copyBtn.addEventListener('click', copyHighlights);
 
 chrome.storage.sync.get('color', (values) => {
     var color = values.color;
@@ -127,9 +99,6 @@ chrome.commands.getAll((commands) => {
         }
     });
 });
-
-// Register (in analytics) that the popup was opened
-backgroundPage.trackEvent('popup', 'opened');
 
 closeConfirmation(); // Trigger initially to hide the 'remove confirmation' section
 

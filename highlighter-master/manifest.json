@@ -22,9 +22,9 @@
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
-            "js": ["js/jquery-3.5.1.min.js", "js/popper.min.js", "js/tippy.min.js", "utils/storageManager.js", "utils/highlight.js", "utils/errorManager.js",
-                   "utils/hoverTools.js", "contentScripts/loadHighlights.js", "contentScripts/highlighterCursor.js", "contentScripts/showpopup.js"],
-            "css": ["css/bootstrap.min.css", "hoverTools.css", "showpopup.css"],
+            "js": ["js/jquery-3.5.1.min.js", "js/axios.min.js", "js/popper.min.js", "js/tippy.min.js", "utils/storageManager.js", "utils/highlight.js", "utils/errorManager.js",
+                   "contentScripts/main.js"],
+            "css": ["css/bootstrap.min.css", "showpopup.css"],
             "all_frames": true
         }
     ],

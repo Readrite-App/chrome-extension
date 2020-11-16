@@ -1,5 +1,3 @@
-"use strict";
-
 (() => { // Restrict the scope of the variables to this file
     const selection = window.getSelection();
     const selectionString = selection.toString();

@@ -1,4 +1,3 @@
-"use strict";
 
 // Remove Highlights
 clearPage(window.location.hostname + window.location.pathname, window.location.pathname);

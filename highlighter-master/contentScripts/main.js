@@ -11,10 +11,38 @@
 ////////////////////////////////////////////////////////
 
 const API_CLAIM_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/claims';
+const API_ARTICLE_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/articles';
 const DEFAULT_SOURCE_ICON_URL = 'https://cdn4.iconfinder.com/data/icons/business-and-marketing-21/32/business_marketing_advertising_News__Events-61-512.png';
 
-// Load highlights
-loadAll(window.location.hostname + window.location.pathname, window.location.pathname);
+// Send query to backend to get highlights
+axios.get(API_ARTICLE_ENDPOINT, {
+  params: {
+    articleURL: window.location.href,
+  }
+}, { withCredentials: true })
+.then(res => {
+  console.log("FETCHED CLAIMS FOR ARTICLE")
+  console.log(res);
+  if (res.claims) {
+    res.claims.map( (item, idx) => {
+      // For each claim in article...
+      //// Highlight claim
+      document.getElementById(event.data.spanid).style.background = "yellow";
+      document.getElementById(event.data.spanid).class = "tooltip-top";
+      //// Create and show Info Pop-up
+      infoPopups[event.data.spanid] = tippy(document.getElementById(event.data.spanid), {
+        content: makeInfoPopupHTML(res.data, selectedText),
+        allowHTML: true,
+        interactive: true,
+        theme: 'informational',
+      })
+      infoPopups[event.data.spanid].show();
+    })
+  }
+})
+.catch(err => {
+  console.log("FAILURE", err);
+})
 
 // SOMETHING
 window.showHighlighterCursor = false;
@@ -51,7 +79,7 @@ $(document.body).mouseup(function (e) {
   // Add a new Medium Pop-up dialog
   const selectedText = window.getSelection().toString();
   if (selectedText.trim().length > 0) {
-    const selection = encodeURIComponent(selectedText).replace(/[!'()*]/g, escape);
+    const selection = selectedText.replace(/[^0-9A-Za-z]+/g, "_");
   
     var span = document.createElement("span");
     span.id = selection;
@@ -83,7 +111,7 @@ $(document.body).mouseup(function (e) {
 });
 
 // ReadRite pop-up with information on article
-let infoPopup = null;
+let infoPopups = {};
 window.addEventListener("message", function (event) {
   // We only accept messages from this window to itself [i.e. not from any iframes]
   if (event.source != window) {
@@ -95,6 +123,11 @@ window.addEventListener("message", function (event) {
     chrome.runtime.sendMessage({ action: 'highlight' });
   
     const selectedText = window.getSelection().toString();
+
+    // Set Medium Popup icon to be loading icon
+    console.log(event.data.spanid);
+    var $mediumPopupElem = $('#medium-popup-' + event.data.spanid);
+    $mediumPopupElem.find('img').attr('src', chrome.extension.getURL("images/loading.gif"));
 
     axios.get(API_CLAIM_ENDPOINT, {
       params: {
@@ -108,13 +141,13 @@ window.addEventListener("message", function (event) {
       document.getElementById(event.data.spanid).style.background = "yellow";
       document.getElementById(event.data.spanid).class = "tooltip-top";
       // Create and show Info Pop-up
-      infoPopup = tippy(document.getElementById(event.data.spanid), {
+      infoPopups[event.data.spanid] = tippy(document.getElementById(event.data.spanid), {
         content: makeInfoPopupHTML(res.data, selectedText),
         allowHTML: true,
         interactive: true,
         theme: 'informational',
       })
-      infoPopup.show();
+      infoPopups[event.data.spanid].show();
       // If the Medium Pop-up on this page is still showing, remove it
       if (inlineMediumPopup) {
         $(inlineMediumPopup.popper.id).remove();
@@ -134,6 +167,7 @@ function makeMediumPopupHTML(spanID) {
   ////////
   return `
     <div
+      id="medium-popup-${spanID}"
       onClick="window.postMessage({ action: 'highlight', spanid: '${spanID}' }, '*'); "
       style="display: flex; align-items: center;"
     >
@@ -151,8 +185,8 @@ function makeInfoPopupHTML(data, claim) {
     'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
     'title' : 'Fake Video of Biden Circulates',
 		'url' : 'https://apnews.com',
-		'claim' : ' The video was shared on Twitter by a person who accused Biden of forgetting what state he was in. One version of the false video circulating on Twitter was viewed more than 1.1 million times in less than 24 hours',
-		'article_date' : '10/20/2020',
+		'summary' : ' The video was shared on Twitter by a person who accused Biden of forgetting what state he was in. One version of the false video circulating on Twitter was viewed more than 1.1 million times in less than 24 hours',
+		'updatedDate' : '10/20/2020',
 		'source_bias' : 3,
 		'confidence' : 0.3,
   };
@@ -161,8 +195,8 @@ function makeInfoPopupHTML(data, claim) {
     'sourceIcon' : 'https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg',
     'title' : 'Disinformation Abounds as Election Day Nears',
 		'url' : 'http://foxnews.com',
-		'claim' : '"He forgets where he\'s at, he forgets who he\'s running against, he forgets what he\'s running for," she said. Asked when Biden had forgotten who he was running against, she cited the misleading clip the Trump campaign had been pushing all',
-		'article_date' : '10/23/2020',
+		'summary' : '"He forgets where he\'s at, he forgets who he\'s running against, he forgets what he\'s running for," she said. Asked when Biden had forgotten who he was running against, she cited the misleading clip the Trump campaign had been pushing all',
+		'updatedDate' : '10/23/2020',
 		'source_bias' : 3,
 		'confidence' : 0.3,
   };
@@ -225,7 +259,56 @@ function makeInfoPopupHTML(data, claim) {
                 </h2>
                 <p>Similar claims were found in the following articles:</p>
                 <div class="similar-claims-container">
-                  
+                  <div class="similar-claims-column">
+                    <div class="similar-claims-article left">
+                      <img 
+                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                        class="hover-tools-header-icon"
+                      />
+                      <span>News Site</span>
+                    </div>
+                    <div class="similar-claims-article left">
+                      <img 
+                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                        class="hover-tools-header-icon"
+                      />
+                      <span>News Site 2</span>
+                    </div>
+                    <p>Left</p>
+                  </div>
+                  <div class="similar-claims-column">
+                    <div class="similar-claims-article center-left">
+                      <img 
+                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                        class="hover-tools-header-icon"
+                      />
+                      <span>News Site</span>
+                    </div>
+                    <p>Center Left</p>
+                  </div>
+                  <div class="similar-claims-column">
+                    <div class="similar-claims-article center">
+                      <img 
+                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                        class="hover-tools-header-icon"
+                      />
+                      <span>News Site</span>
+                    </div>
+                    <p>Center</p>
+                  </div>
+                  <div class="similar-claims-column">
+                    <p>Center Right</p>
+                  </div>
+                  <div class="similar-claims-column">
+                    <div class="similar-claims-article right">
+                      <img 
+                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                        class="hover-tools-header-icon"
+                      />
+                      <span>News Site</span>
+                    </div>
+                    <p>Right</p>
+                  </div>
                 </div>
             </div>
             <div id="information-popup-footer">

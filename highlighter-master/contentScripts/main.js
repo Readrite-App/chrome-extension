@@ -12,6 +12,7 @@
 
 const API_CLAIM_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/claims';
 const API_ARTICLE_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/articles';
+const LOGGING_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/articles';
 const DEFAULT_SOURCE_ICON_URL = 'https://cdn4.iconfinder.com/data/icons/business-and-marketing-21/32/business_marketing_advertising_News__Events-61-512.png';
 
 // Send query to backend to get highlights
@@ -229,6 +230,20 @@ function makeInfoPopupHTML(data, claim) {
                         ${recommendedRead.summary}...
                         <a href="${recommendedRead.url}" target="_blank">Keep reading</a>
                     </div>
+                    <div class="hover-tools-article-feedback">
+                      <img 
+                        src="${chrome.extension.getURL("images/happy.png")}" 
+                        class="tooltip-icon" 
+                        style="width:40px"
+                        onClick="function() { log_feedback(article, claim, true) }"
+                      />
+                      <img 
+                        src="${chrome.extension.getURL("images/unhappy.png")}" 
+                        class="tooltip-icon" 
+                        style="width:40px" 
+                        onClick="function() { log_feedback(article, claim, false) }"
+                      />
+                    </div>
                 </div>
                 <h2 class="hover-tools-header">
                   <img 
@@ -248,6 +263,10 @@ function makeInfoPopupHTML(data, claim) {
                     <div class="hover-tools-article-text">
                         ${alternativeRead.summary}...
                         <a href="${alternativeRead.url}" target="_blank">Keep reading</a>
+                    </div>
+                    <div class="hover-tools-article-feedback">
+                      <img src="${chrome.extension.getURL("images/happy.png")}" class="tooltip-icon" style="width:40px" />
+                      <img src="${chrome.extension.getURL("images/unhappy.png")}" class="tooltip-icon" style="width:40px" />
                     </div>
                 </div> 
                 <h2 class="hover-tools-header">
@@ -318,4 +337,27 @@ function makeInfoPopupHTML(data, claim) {
               Read Rite
             </div>
         </div>`;
+}
+
+
+// Logging
+function log_feedback(article, claim, feedback) {
+  log({
+    'article' : article,
+    'claim' : claim,
+    'feedback' : feedback,
+  })
+}
+function log(params) {
+  chrome.storage.local.get("browserID", function(data) {
+    if (data.browserID) {
+      axios.post(LOGGING_ENDPOINT, {
+        params: {
+          'time' : Date(),
+          'browserID' : data.browserID,
+          ...params,
+        }
+      }, { withCredentials: true })
+    }
+  });
 }

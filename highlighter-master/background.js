@@ -11,6 +11,33 @@
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
+// Print out local storage contents
+chrome.storage.local.get(console.log);  
+
+// Set unique ID for this browser
+function create_UUID(){
+    var dt = new Date().getTime();
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = (dt + Math.random() * 16) % 16 | 0;
+        dt = Math.floor(dt / 16);
+        return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+    return uuid;
+}
+chrome.storage.local.get("browserID", function(data) {
+    console.log(data);
+    if (!data.browserID) {
+        chrome.storage.local.set({browserID: create_UUID() }, function() {
+            if (chrome.runtime.lastError) {
+                console.error(
+                    "Error setting browserID in Chrome storage" +
+                    ": " + chrome.runtime.lastError.message
+                );
+            }
+        });
+    }
+});
+
 // Add option when right-clicking
 chrome.contextMenus.create({ title: "Highlighter color", id: "highlight-colors" });
 chrome.contextMenus.create({ title: "Yellow", id: "yellow", parentId: "highlight-colors", type:"radio", onclick: changeColorFromContext });

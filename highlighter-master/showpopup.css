@@ -133,3 +133,11 @@
 .tippy-box[data-theme~='informational'] #information-popup-content .similar-claims-article img {
   margin-right: 3px;
 }
+
+/* Highlighting Styling */
+.highlight {
+  background-color: yellow;
+}
+.note {
+  background-color: limegreen;
+}

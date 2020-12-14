@@ -39,11 +39,11 @@ chrome.storage.local.get("browserID", function(data) {
 });
 
 // Add option when right-clicking
-chrome.contextMenus.create({ title: "Highlighter color", id: "highlight-colors" });
-chrome.contextMenus.create({ title: "Yellow", id: "yellow", parentId: "highlight-colors", type:"radio", onclick: changeColorFromContext });
-chrome.contextMenus.create({ title: "Cyan", id: "cyan", parentId: "highlight-colors", type:"radio", onclick: changeColorFromContext });
-chrome.contextMenus.create({ title: "Lime", id: "lime", parentId: "highlight-colors", type:"radio", onclick: changeColorFromContext });
-chrome.contextMenus.create({ title: "Magenta", id: "magenta", parentId: "highlight-colors", type:"radio", onclick: changeColorFromContext });
+chrome.contextMenus.create({ title: "ReadRite", id: "readrite" });
+chrome.contextMenus.create({ title: "Yellow", id: "yellow", parentId: "readrite", type:"radio", onclick: changeColorFromContext });
+chrome.contextMenus.create({ title: "Cyan", id: "cyan", parentId: "readrite", type:"radio", onclick: changeColorFromContext });
+chrome.contextMenus.create({ title: "Lime", id: "lime", parentId: "readrite", type:"radio", onclick: changeColorFromContext });
+chrome.contextMenus.create({ title: "Magenta", id: "magenta", parentId: "readrite", type:"radio", onclick: changeColorFromContext });
 
 // Set default highlight to yellow
 chrome.contextMenus.update("yellow", { checked: true });
@@ -53,36 +53,5 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // chrome.browserAction.setIcon({ path: "images/loading.png" });
     console.log("ACTION:", request.action);
     if (request.action && request.action == 'highlight') {
-        highlightText();
     }
 });
-
-
-function highlightText() {
-    chrome.tabs.executeScript({file: 'contentScripts/actions/highlight.js'});
-}
-
-function toggleHighlighterCursor() {
-    chrome.tabs.executeScript({file: 'contentScripts/actions/toggleHighlighterCursor.js'});
-}
-
-function removeHighlights() {
-    chrome.tabs.executeScript({file: 'contentScripts/actions/removeHighlights.js'});
-}
-
-function showHighlight(highlightId) {
-    chrome.tabs.executeScript({
-        code: `var highlightId = ${highlightId};`
-    }, function() {
-        chrome.tabs.executeScript({file: 'contentScripts/actions/showHighlight.js'});
-    });
-}
-
-function changeColorFromContext(info) {
-    changeColor(info.menuItemId);
-}
-function changeColor(color) {
-    chrome.storage.sync.set({ color: color });
-    // Also update the context menu
-    chrome.contextMenus.update(color, { checked: true });
-}

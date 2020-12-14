@@ -10,12 +10,78 @@
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 const API_CLAIM_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/claims';
 const API_ARTICLE_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/articles';
-const LOGGING_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/articles';
+const LOGGING_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/feedback';
 const DEFAULT_SOURCE_ICON_URL = 'https://cdn4.iconfinder.com/data/icons/business-and-marketing-21/32/business_marketing_advertising_News__Events-61-512.png';
 
+// Highlighting + Medium Pop-up
+rangy.init();
+var highlighter = rangy.createHighlighter();
+var inlineMediumPopup = null;
+
+function removeHighlightFromSelectedText(highlighter) {
+  highlighter.unhighlightSelection();
+}
+function reloadPage(button) {
+  highlighter.serialize();
+}
+
+highlighter.addClassApplier(rangy.createClassApplier("highlight", {
+    ignoreWhiteSpace: true,
+    elementTagName: "span",
+    onElementCreate: function($elem, classApplier) {
+      console.log($elem);
+      const id = getRandomInt(0, 9999999);
+      inlineMediumPopup = tippy($elem, {
+        content: makeMediumPopupHTML(id),
+        allowHTML: true,
+        interactive: true,
+        interactiveDebounce: 999999, // Stay until user clicks away
+      })
+    },
+    elementProperties: {
+        onclick: function() {
+            alert('hi');
+            var highlight = highlighter.getHighlightForElement(this);
+            if (window.confirm("Delete this note (ID " + highlight.id + ")?")) {
+                highlighter.removeHighlights( [highlight] );
+            }
+            return false;
+        },
+    }
+}));
+
+$(document.body).mouseup(function (e) {
+
+  // If this mouseup was NOT due to text selection, IGNORE
+  if (!window.getSelection()) {
+    return;
+  }
+  // If mouseup occured in one of our ReadRite Pop-ups, IGNORE
+  if ($(e.target).parents('.tippy-box').length > 0) {
+    return;
+  }
+  // If no text selected, IGNORE
+  const selectedText = window.getSelection().toString();
+  if (selectedText.trim().length < 1) {
+    return;
+  }
+
+  // Make Medium Pop-up above selected text for user to click highlight icon
+  highlighter.highlightSelection("highlight");
+});
+
+
+//
 // Send query to backend to get highlights
+//
 axios.get(API_ARTICLE_ENDPOINT, {
   params: {
     articleURL: window.location.href,
@@ -28,8 +94,7 @@ axios.get(API_ARTICLE_ENDPOINT, {
     res.claims.map( (item, idx) => {
       // For each claim in article...
       //// Highlight claim
-      document.getElementById(event.data.spanid).style.background = "yellow";
-      document.getElementById(event.data.spanid).class = "tooltip-top";
+      // TODO
       //// Create and show Info Pop-up
       infoPopups[event.data.spanid] = tippy(document.getElementById(event.data.spanid), {
         content: makeInfoPopupHTML(res.data, selectedText),
@@ -45,75 +110,10 @@ axios.get(API_ARTICLE_ENDPOINT, {
   console.log("FAILURE", err);
 })
 
-// SOMETHING
-window.showHighlighterCursor = false;
-function highlightOnSelection() {
-    if (!window.showHighlighterCursor) return;
-    
-    const selection = window.getSelection();
-    const selectionString = selection.toString();
-
-    if (selectionString) { // If there is text selected
-        chrome.runtime.sendMessage({ action: 'highlight' });
-    }
-}
-document.addEventListener('mouseup', highlightOnSelection);
-
-// Show ReadRite Inline Medium Pop-up
-var inlineMediumPopup = null;
-$(document.body).mouseup(function (e) {
-
-  // If this mouseup was NOT due to text selection, IGNORE
-  if (!window.getSelection()) {
-    return;
-  }
-  // If mouseup occured in one of our ReadRite Pop-ups, IGNORE
-  if ($(e.target).parents('.tippy-box').length > 0) {
-    return;
-  }
-
-  // If there is already a Medium Pop-up on this page, remove it
-  if (inlineMediumPopup) {
-    inlineMediumPopup.destroy();
-  }
-
-  // Add a new Medium Pop-up dialog
-  const selectedText = window.getSelection().toString();
-  if (selectedText.trim().length > 0) {
-    const selection = selectedText.replace(/[^0-9A-Za-z]+/g, "_");
-  
-    var span = document.createElement("span");
-    span.id = selection;
-
-    var sel = window.getSelection();
-    // If user selected text, add highlighting <span> around it.
-    // NOTE: This fails if selection crosses over non-textual nodes (e.g. multiple <p>'s)
-    try {
-      // Add <span> around selected text
-      if (sel.rangeCount > 0) {
-        var range = sel.getRangeAt(0).cloneRange();
-        range.surroundContents(span);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-      // Make Medium Pop-up above selected text for user to click highlight icon
-      inlineMediumPopup = tippy(span, {
-        content: makeMediumPopupHTML(span.id),
-        allowHTML: true,
-        interactive: true,
-        interactiveDebounce: 999999, // Stay until user clicks away
-      })
-      console.log("A");
-      inlineMediumPopup.show();
-    } catch (error) {
-      console.log("ERROR SELECTING TEXT: ", error);
-    }
-  }
-});
-
 // ReadRite pop-up with information on article
 let infoPopups = {};
 window.addEventListener("message", function (event) {
+  console.log(event);
   // We only accept messages from this window to itself [i.e. not from any iframes]
   if (event.source != window) {
     return;
@@ -121,7 +121,6 @@ window.addEventListener("message", function (event) {
 
   // Fetch info for highlighted claim, display Informational Pop-Up
   if (event.data.action && event.data.action === "highlight") {
-    chrome.runtime.sendMessage({ action: 'highlight' });
   
     const selectedText = window.getSelection().toString();
 
@@ -162,14 +161,14 @@ window.addEventListener("message", function (event) {
   }
 }, false);
 
-function makeMediumPopupHTML(spanID) {
+function makeMediumPopupHTML(id) {
   ////////
   // Popup that shows when user selects un-highlighted text (e.g. like Medium does for its articles)
   ////////
   return `
     <div
-      id="medium-popup-${spanID}"
-      onClick="window.postMessage({ action: 'highlight', spanid: '${spanID}' }, '*'); "
+      id="medium-popup"
+      onClick="window.postMessage({ action: 'highlight', id: ${id} }, '*'); "
       style="display: flex; align-items: center;"
     >
       <img src="${chrome.extension.getURL("images/info.png")}" class="tooltip-icon" />
@@ -265,8 +264,19 @@ function makeInfoPopupHTML(data, claim) {
                         <a href="${alternativeRead.url}" target="_blank">Keep reading</a>
                     </div>
                     <div class="hover-tools-article-feedback">
-                      <img src="${chrome.extension.getURL("images/happy.png")}" class="tooltip-icon" style="width:40px" />
-                      <img src="${chrome.extension.getURL("images/unhappy.png")}" class="tooltip-icon" style="width:40px" />
+                      <span style="font-style:italics; font-size: 10px;">Feedback</span>
+                      <img 
+                        src="${chrome.extension.getURL("images/happy.png")}" 
+                        class="tooltip-icon" 
+                        style="width:40px"
+                        onClick="function() { log_feedback(article, claim, true) }"
+                      />
+                      <img 
+                        src="${chrome.extension.getURL("images/unhappy.png")}" 
+                        class="tooltip-icon" 
+                        style="width:40px" 
+                        onClick="function() { log_feedback(article, claim, false) }"
+                      />
                     </div>
                 </div> 
                 <h2 class="hover-tools-header">
@@ -341,10 +351,21 @@ function makeInfoPopupHTML(data, claim) {
 
 
 // Logging
+function create_UUID(){
+  var dt = new Date().getTime();
+  var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = (dt + Math.random() * 16) % 16 | 0;
+      dt = Math.floor(dt / 16);
+      return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+  return uuid;
+}
+const SESSION_UUID = create_UUID();
 function log_feedback(article, claim, feedback) {
   log({
     'article' : article,
     'claim' : claim,
+    'our_recommendation' : null,
     'feedback' : feedback,
   })
 }
@@ -354,7 +375,8 @@ function log(params) {
       axios.post(LOGGING_ENDPOINT, {
         params: {
           'time' : Date(),
-          'browserID' : data.browserID,
+          'browserID' : data.browserID, // Always the same for the same browser
+          'sessionID' : SESSION_UUID, // Changes with every page reload
           ...params,
         }
       }, { withCredentials: true })

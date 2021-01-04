@@ -3,7 +3,12 @@
   height: 25px;
   width: 25px;
 }
-.tooltip-icon:hover {
+.tooltip-feedback-icon {
+  height: 20px;
+  width: 20px;
+}
+.tooltip-icon:hover,
+.tooltip-feedback-icon:hover {
   cursor: pointer;
   opacity: 0.7;
 }
@@ -66,7 +71,7 @@
 .tippy-box[data-theme~='informational'] #information-popup-content .article-container {
   display: flex;
   align-items: center;
-  padding-bottom: 20px;
+  padding-bottom: 10px;
 }
 .tippy-box[data-theme~='informational'] #information-popup-content .hover-tools-article-text {
   font-size: 12px;
@@ -135,9 +140,6 @@
 }
 
 /* Highlighting Styling */
-.highlight {
-  background-color: yellow;
-}
-.note {
-  background-color: limegreen;
+.readrite-highlight {
+  background-color: green;
 }

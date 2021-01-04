@@ -66,7 +66,7 @@
         }
 
         function addClass(el, className) {
-            if (typeof el.classList == "object") {
+            if (typeof el.classList == "object" && typeof className == "object") {
                 el.classList.add(className);
             } else {
                 var classNameSupported = (typeof el.className == "string");

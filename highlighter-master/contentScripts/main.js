@@ -10,99 +10,155 @@
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-const API_CLAIM_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/claims';
-const API_ARTICLE_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/articles';
-const LOGGING_ENDPOINT = 'http://readrite.uc.r.appspot.com/v1/feedback';
+const API_CLAIM_ENDPOINT = 'https://readrite.appspot.com/v1/claims';
+const API_ARTICLE_ENDPOINT = 'https://readrite.appspot.com/v1/articles';
+const LOGGING_ENDPOINT = 'https://readrite.appspot.com/v1/feedback';
 const DEFAULT_SOURCE_ICON_URL = 'https://cdn4.iconfinder.com/data/icons/business-and-marketing-21/32/business_marketing_advertising_News__Events-61-512.png';
 
-// Highlighting + Medium Pop-up
+const SESSION_UUID = create_UUID();
+
+$(window).on("load", function() {
+  log_articleLoad(window.location.href);
+})
+$(window).on("unload", function() {
+  log_articleLeave(window.location.href);
+})
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+// Highlighting text + showing Medium-like pop-up
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
 rangy.init();
 var highlighter = rangy.createHighlighter();
-var inlineMediumPopup = null;
-
+var highlightMetaData = {
+  $elems: [],
+  mediumPopups: [],
+  infoPopups: [],
+};
 function removeHighlightFromSelectedText(highlighter) {
   highlighter.unhighlightSelection();
 }
-function reloadPage(button) {
-  highlighter.serialize();
+var isSameHighlight = false;
+var highlightID = getRandomInt(0, 99999);
+function createRangyClassApplier(className) {
+  highlighter.addClassApplier(rangy.createClassApplier(className, {
+      ignoreWhiteSpace: true,
+      elementTagName: "span",
+      onElementCreate: function($elem, classApplier) {
+        if (!isSameHighlight) {
+          // New highlight, so reset everything
+          highlightID = getRandomInt(0, 99999);
+          highlightMetaData.mediumPopups.map((val, idx) => val.destroy());
+          highlightMetaData.infoPopups.map((val, idx) => val.destroy());
+          highlightMetaData.infoPopups = [];
+          highlightMetaData.mediumPopups = []; 
+          highlightMetaData.$elems = [];
+        }
+        var tip = tippy($elem, {
+          content: makeMediumPopupHTML(highlightID),
+          allowHTML: true,
+          interactive: true,
+          interactiveDebsunce: 999999, // Stay until user clicks away
+        });
+        highlightMetaData.mediumPopups.push(tip);
+        highlightMetaData.$elems.push($elem);
+        isSameHighlight = true;
+      },
+      normalize: true,
+  }));
 }
-
-highlighter.addClassApplier(rangy.createClassApplier("highlight", {
-    ignoreWhiteSpace: true,
-    elementTagName: "span",
-    onElementCreate: function($elem, classApplier) {
-      console.log($elem);
-      const id = getRandomInt(0, 9999999);
-      inlineMediumPopup = tippy($elem, {
-        content: makeMediumPopupHTML(id),
-        allowHTML: true,
-        interactive: true,
-        interactiveDebounce: 999999, // Stay until user clicks away
-      })
-    },
-    elementProperties: {
-        onclick: function() {
-            alert('hi');
-            var highlight = highlighter.getHighlightForElement(this);
-            if (window.confirm("Delete this note (ID " + highlight.id + ")?")) {
-                highlighter.removeHighlights( [highlight] );
-            }
-            return false;
-        },
-    }
-}));
-
+// Make Medium Pop-up above selected text
+createRangyClassApplier('readrite-highlight');
 $(document.body).mouseup(function (e) {
-
-  // If this mouseup was NOT due to text selection, IGNORE
-  if (!window.getSelection()) {
-    return;
+  const selection = rangy.getSelection();
+  isSameHighlight = false;
+  if (isSelectedTextValid(e)) {
+    // Set unique classname for this highlight
+    highlighter.highlightSelection('readrite-highlight');
+    // Only show one Medium popup at first
+    highlightMetaData.mediumPopups.map((val, idx) => idx === 0 ? val.show() : {});
   }
-  // If mouseup occured in one of our ReadRite Pop-ups, IGNORE
-  if ($(e.target).parents('.tippy-box').length > 0) {
-    return;
-  }
-  // If no text selected, IGNORE
-  const selectedText = window.getSelection().toString();
-  if (selectedText.trim().length < 1) {
-    return;
-  }
-
-  // Make Medium Pop-up above selected text for user to click highlight icon
-  highlighter.highlightSelection("highlight");
 });
 
 
-//
-// Send query to backend to get highlights
-//
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+// Fetching claim-level annotations
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+window.addEventListener("message", function (event) {
+  // We only accept messages from this window to itself [i.e. not from any iframes]
+  if (event.source != window || !event.data.action) { return; }
+  // Fetch info for highlighted claim, display Informational Pop-Up
+  if (event.data.action === "highlight") {
+
+    // Set Medium Popup icon to be loading icon
+    var $mediumPopupElem = $('#medium-popup-' + event.data.id);
+    $mediumPopupElem.find('img').attr('src', chrome.extension.getURL("images/loading.gif"));
+
+    // Get selected text
+    const selection = rangy.getSelection().toString();
+
+    // Get annotations for this claim
+    axios.get(API_CLAIM_ENDPOINT, {
+      params: {
+        article_url: window.location.href,
+        claims_list: selection,
+      }
+    }, { withCredentials: true })
+    .then(res => {
+      console.log("FETCHED CLAIM for ", event.data.id);
+      // Create and show Info Pop-up
+      const data = res.data[Object.keys(res.data)[0]]; 
+      highlightMetaData.$elems.map(($elem, idx) => {
+        var tip = tippy($elem, {
+          content: makeInfoPopupHTML(data, selection),
+          allowHTML: true,
+          interactive: true,
+          theme: 'informational',
+        })
+        highlightMetaData.infoPopups.push(tip);
+      });
+      // Only show one Info popup
+      highlightMetaData.infoPopups.map((val, idx) => idx === 0 ? val.show() : {})
+      // Hide Medium popups that are showing
+      highlightMetaData.mediumPopups.map((val, idx) => val.destroy());
+    })
+    .catch(err => {
+      console.log("FAILURE", err);
+    })
+  }
+  else if (event.data.action === "log") {
+    if (event.data.event === "annotationRecClick") {
+      log_annotationRecClick(event.data.data.article, event.data.data.claim, event.data.data.rec, event.data.data.isRec);
+    }
+    else if (event.data.event === "annotationRecFeedback") {
+      log_annotationRecFeedback(event.data.data.article, event.data.data.claim, event.data.data.rec, event.data.data.isRec, event.data.data.feeddback);
+    }
+  }
+}, false);
+
+
+
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+// Fetching article-level annotations
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+$(window).on('load', function() {
+  console.log($(document.body).text());
+})
 axios.get(API_ARTICLE_ENDPOINT, {
   params: {
     articleURL: window.location.href,
   }
 }, { withCredentials: true })
 .then(res => {
-  console.log("FETCHED CLAIMS FOR ARTICLE")
-  console.log(res);
-  if (res.claims) {
-    res.claims.map( (item, idx) => {
+  if (res.data.claims) {
+    res.data.claims.map( (item, idx) => {
       // For each claim in article...
       //// Highlight claim
-      // TODO
       //// Create and show Info Pop-up
-      infoPopups[event.data.spanid] = tippy(document.getElementById(event.data.spanid), {
-        content: makeInfoPopupHTML(res.data, selectedText),
-        allowHTML: true,
-        interactive: true,
-        theme: 'informational',
-      })
-      infoPopups[event.data.spanid].show();
     })
   }
 })
@@ -110,64 +166,13 @@ axios.get(API_ARTICLE_ENDPOINT, {
   console.log("FAILURE", err);
 })
 
-// ReadRite pop-up with information on article
-let infoPopups = {};
-window.addEventListener("message", function (event) {
-  console.log(event);
-  // We only accept messages from this window to itself [i.e. not from any iframes]
-  if (event.source != window) {
-    return;
-  }
-
-  // Fetch info for highlighted claim, display Informational Pop-Up
-  if (event.data.action && event.data.action === "highlight") {
-  
-    const selectedText = window.getSelection().toString();
-
-    // Set Medium Popup icon to be loading icon
-    console.log(event.data.spanid);
-    var $mediumPopupElem = $('#medium-popup-' + event.data.spanid);
-    $mediumPopupElem.find('img').attr('src', chrome.extension.getURL("images/loading.gif"));
-
-    axios.get(API_CLAIM_ENDPOINT, {
-      params: {
-        articleURL: 'https://www.cnn.com/2020/10/30/politics/what-matters-october-29/index.html',
-        claims_list: selectedText,
-      }
-    }, { withCredentials: true })
-    .then(res => {
-      console.log("FETCHED CLAIM")
-      console.log(res);
-      document.getElementById(event.data.spanid).style.background = "yellow";
-      document.getElementById(event.data.spanid).class = "tooltip-top";
-      // Create and show Info Pop-up
-      infoPopups[event.data.spanid] = tippy(document.getElementById(event.data.spanid), {
-        content: makeInfoPopupHTML(res.data, selectedText),
-        allowHTML: true,
-        interactive: true,
-        theme: 'informational',
-      })
-      infoPopups[event.data.spanid].show();
-      // If the Medium Pop-up on this page is still showing, remove it
-      if (inlineMediumPopup) {
-        $(inlineMediumPopup.popper.id).remove();
-        $("#tippy-" + inlineMediumPopup.id).remove();
-        inlineMediumPopup.destroy();
-      }
-    })
-    .catch(err => {
-      console.log("FAILURE", err);
-    })
-  }
-}, false);
-
 function makeMediumPopupHTML(id) {
   ////////
   // Popup that shows when user selects un-highlighted text (e.g. like Medium does for its articles)
   ////////
   return `
     <div
-      id="medium-popup"
+      id="medium-popup-${id}"
       onClick="window.postMessage({ action: 'highlight', id: ${id} }, '*'); "
       style="display: flex; align-items: center;"
     >
@@ -180,33 +185,7 @@ function makeInfoPopupHTML(data, claim) {
   // Popup that shows when user mouses over a highlighted claim and wants information on it
   ////////
   // Parse data
-  const recommendedRead = {
-    'source' : 'AP',
-    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
-    'title' : 'Fake Video of Biden Circulates',
-		'url' : 'https://apnews.com',
-		'summary' : ' The video was shared on Twitter by a person who accused Biden of forgetting what state he was in. One version of the false video circulating on Twitter was viewed more than 1.1 million times in less than 24 hours',
-		'updatedDate' : '10/20/2020',
-		'source_bias' : 3,
-		'confidence' : 0.3,
-  };
-  const alternativeRead = {
-    'source' : 'Fox News',
-    'sourceIcon' : 'https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg',
-    'title' : 'Disinformation Abounds as Election Day Nears',
-		'url' : 'http://foxnews.com',
-		'summary' : '"He forgets where he\'s at, he forgets who he\'s running against, he forgets what he\'s running for," she said. Asked when Biden had forgotten who he was running against, she cited the misleading clip the Trump campaign had been pushing all',
-		'updatedDate' : '10/23/2020',
-		'source_bias' : 3,
-		'confidence' : 0.3,
-  };
-  // NOTES FOR ELENA
-  // Return top 10 articles always
-  // Rank every article in DB
-
-  // console.log(data, claim, data[claim]);
-  // const recommendedRead = data[claim][0];
-  // const alternativeRead = data[claim][1];
+  const { recommendedRead, alternativeRead } = defaultReads(data);
   // Return HTML
   return `<div id="information-popup">
             <div id="information-popup-content">
@@ -227,20 +206,40 @@ function makeInfoPopupHTML(data, claim) {
                     />
                     <div class="hover-tools-article-text">
                         ${recommendedRead.summary}...
-                        <a href="${recommendedRead.url}" target="_blank">Keep reading</a>
+                        <a 
+                          href="${recommendedRead.url}" target="_blank" 
+                          onClick="window.postMessage({ action: 'log', event: 'annotationRecClick', data: { 
+                            article: '${window.location.href}', 
+                            claim: '${claim}', 
+                            rec: '${recommendedRead.url}',
+                            isRec: true,
+                          }})"
+                        >
+                          Keep reading
+                        </a>
                     </div>
                     <div class="hover-tools-article-feedback">
                       <img 
                         src="${chrome.extension.getURL("images/happy.png")}" 
-                        class="tooltip-icon" 
-                        style="width:40px"
-                        onClick="function() { log_feedback(article, claim, true) }"
+                        class="tooltip-feedback-icon" 
+                        onClick="window.postMessage({ action: 'log', event: 'annotationRecFeedback', data: { 
+                          article: '${window.location.href}', 
+                          claim: '${claim}', 
+                          rec: '${recommendedRead.url}',
+                          isRec: true,
+                          feedback: true
+                        }})"
                       />
                       <img 
                         src="${chrome.extension.getURL("images/unhappy.png")}" 
-                        class="tooltip-icon" 
-                        style="width:40px" 
-                        onClick="function() { log_feedback(article, claim, false) }"
+                        class="tooltip-feedback-icon" 
+                        onClick="window.postMessage({ action: 'log', event: 'annotationRecFeedback', data: { 
+                          article: '${window.location.href}', 
+                          claim: '${claim}', 
+                          rec: '${recommendedRead.url}',
+                          isRec: true,
+                          feedback: false
+                        }})"
                       />
                     </div>
                 </div>
@@ -260,22 +259,41 @@ function makeInfoPopupHTML(data, claim) {
                         class="hover-tools-article-news-icon"
                     />
                     <div class="hover-tools-article-text">
-                        ${alternativeRead.summary}...
-                        <a href="${alternativeRead.url}" target="_blank">Keep reading</a>
+                      ${alternativeRead.summary}...
+                      <a 
+                        href="${alternativeRead.url}" target="_blank"  
+                        onClick="window.postMessage({ action: 'log', event: 'annotationRecClick', data: { 
+                          article: '${window.location.href}', 
+                          claim: '${claim}', 
+                          rec: '${alternativeRead.url}',
+                          isRec: false,
+                        }})"
+                      >
+                        Keep reading
+                    </a>
                     </div>
                     <div class="hover-tools-article-feedback">
-                      <span style="font-style:italics; font-size: 10px;">Feedback</span>
                       <img 
                         src="${chrome.extension.getURL("images/happy.png")}" 
-                        class="tooltip-icon" 
-                        style="width:40px"
-                        onClick="function() { log_feedback(article, claim, true) }"
+                        class="tooltip-feedback-icon" 
+                        onClick="window.postMessage({ action: 'log', event: 'annotationRecFeedback', data: { 
+                          article: '${window.location.href}', 
+                          claim: '${claim}', 
+                          rec: '${alternativeRead.url}',
+                          isRec: false,
+                          feedback: true
+                        }})"
                       />
                       <img 
                         src="${chrome.extension.getURL("images/unhappy.png")}" 
-                        class="tooltip-icon" 
-                        style="width:40px" 
-                        onClick="function() { log_feedback(article, claim, false) }"
+                        class="tooltip-feedback-icon" 
+                        onClick="window.postMessage({ action: 'log', event: 'annotationRecFeedback', data: { 
+                          article: '${window.location.href}', 
+                          claim: '${claim}', 
+                          rec: '${alternativeRead.url}',
+                          isRec: false,
+                          feedback: false
+                        }})"
                       />
                     </div>
                 </div> 
@@ -349,26 +367,81 @@ function makeInfoPopupHTML(data, claim) {
         </div>`;
 }
 
+function parseRecAltReadData(data) {
+  const recRead = data['recommended_read'];
+  const altRead = data['alternative_perspective'];
+  const recommendedRead = {
+    'source' : recRead['source'],
+    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
+    'title' : recRead['title'],
+		'url' : recRead['url'],
+		'summary' : truncateString(recRead['content'], 100),
+		'updateDate' : recRead['updateDate'],
+		'bias' : recRead['bias'],
+		'reliability' : recRead['reliability'],
+  };
+  const alternativeRead = {
+    'source' : altRead['source'],
+    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
+    'title' : altRead['title'],
+		'url' : altRead['url'],
+		'summary' : truncateString(altRead['content'], 100),
+		'updateDate' : altRead['updateDate'],
+		'bias' : altRead['bias'],
+		'reliability' : altRead['reliability'],
+  };
+  return {
+    recommendedRead, 
+    alternativeRead
+  }
+}
 
-// Logging
-function create_UUID(){
-  var dt = new Date().getTime();
-  var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = (dt + Math.random() * 16) % 16 | 0;
-      dt = Math.floor(dt / 16);
-      return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
-  return uuid;
+function defaultReads(data) {
+  const recommendedRead = {
+    'source' : 'AP',
+    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
+    'title' : 'Fake Video of Biden Circulates',
+		'url' : 'https://apnews.com',
+		'summary' : ' The video was shared on Twitter by a person who accused Biden of forgetting what state he was in. One version of the false video circulating on Twitter was viewed more than 1.1 million times in less than 24 hours',
+		'updatedDate' : '10/20/2020',
+		'bias' : 3,
+		'reliability' : 0.3,
+  };
+  const alternativeRead = {
+    'source' : 'Fox News',
+    'sourceIcon' : 'https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg',
+    'title' : 'Disinformation Abounds as Election Day Nears',
+		'url' : 'http://foxnews.com',
+		'summary' : '"He forgets where he\'s at, he forgets who he\'s running against, he forgets what he\'s running for," she said. Asked when Biden had forgotten who he was running against, she cited the misleading clip the Trump campaign had been pushing all',
+		'updatedDate' : '10/23/2020',
+		'bias' : 3,
+		'reliability' : 0.3,
+  };
+  return {
+    recommendedRead, 
+    alternativeRead
+  }
 }
-const SESSION_UUID = create_UUID();
-function log_feedback(article, claim, feedback) {
-  log({
-    'article' : article,
-    'claim' : claim,
-    'our_recommendation' : null,
-    'feedback' : feedback,
-  })
+
+
+function isSelectedTextValid(e) {
+  // If no text selection, IGNORE
+  if (!window.getSelection()) {
+    return false;
+  }
+  // If mouseup occured in one of our ReadRite Pop-ups, IGNORE
+  if ($(e.target).parents('.tippy-box').length > 0) {
+    return false
+  }
+  // If no text selected, IGNORE
+  const selectedText = window.getSelection().toString();
+  if (selectedText.trim().length < 1) {
+    return false;
+  }
+  return true;
 }
+
+
 function log(params) {
   chrome.storage.local.get("browserID", function(data) {
     if (data.browserID) {
@@ -380,6 +453,72 @@ function log(params) {
           ...params,
         }
       }, { withCredentials: true })
+      .then(() => {
+        console.log("Logged: ", params);
+      })
+      .catch((error) => {
+        console.log("Error logging: ", error);
+      })
     }
   });
+}
+
+function log_articleLoad(article) {
+  // User lands on an article that Readrite will annotate
+  log({
+    'article' : article,
+    'event' : 'articleLoad',
+  })
+}
+function log_articleLeave(article) {
+  // User leaves an article that Readrite annotated
+  log({
+    'article' : article,
+    'event' : 'articleLeave',
+  })
+}
+function log_annotationMouseOver(article, claim) {
+  // User moused over an annotation
+  log({
+    'article' : article,
+    'claim' : claim,
+    'event' : 'annotationMouseOver',
+  })
+}
+function log_annotationMouseOut(article, claim) {
+  // User moused away/annotation disappeared
+  log({
+    'article' : article,
+    'claim' : claim,
+    'event' : 'annotationMouseOut',
+  })
+}
+function log_annotationRecClick(article, claim, rec, isRec) {
+  // User clicked through on a recommendation in an annotation
+  log({
+    'article' : article,
+    'claim' : claim,
+    'rec' : rec,
+    'event' : isRec ? 'annotationRecClick' : 'annotationAltClick',
+  })
+}
+function log_annotationRecFeedback(article, claim, rec, isRec, feedback) {
+  // User clicked “thumbs up” or “thumbs down”
+  log({
+    'article' : article,
+    'claim' : claim,
+    'rec' : rec,
+    'feedback' : feedback,
+    'event' : isRec ? 'annotationRecFeedback' : 'annotationAltFeedback',
+  })
+}
+function log_annotationRecFeedbackText(article, claim, rec, isRec, feedbackText) {
+  // User submitted text feedback from within readrite annotation
+  log({
+    'article' : article,
+    'claim' : claim,
+    'rec' : rec,
+    'feedbackText' : feedbackText,
+    'event' : isRec ? 'annotationRecFeedbackText' : 'annotationAltFeedbackText',
+  })
 }

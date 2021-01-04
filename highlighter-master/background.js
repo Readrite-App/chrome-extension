@@ -24,10 +24,10 @@ function create_UUID(){
     });
     return uuid;
 }
-chrome.storage.local.get("browserID", function(data) {
-    console.log(data);
+function generateBrowserID(data, callback) {
     if (!data.browserID) {
-        chrome.storage.local.set({browserID: create_UUID() }, function() {
+        const uid = create_UUID();
+        chrome.storage.local.set({browserID: uid }, function() {
             if (chrome.runtime.lastError) {
                 console.error(
                     "Error setting browserID in Chrome storage" +
@@ -35,16 +35,15 @@ chrome.storage.local.get("browserID", function(data) {
                 );
             }
         });
+        callback(uid);
     }
-});
+    callback(data.browserID);
+}
+chrome.storage.local.get("browserID", (data) => generateBrowserID(data, () => {}));
 
 // Add option when right-clicking
 chrome.contextMenus.create({ title: "ReadRite", id: "readrite" });
-chrome.contextMenus.create({ title: "Yellow", id: "yellow", parentId: "readrite", type:"radio", onclick: changeColorFromContext });
-chrome.contextMenus.create({ title: "Cyan", id: "cyan", parentId: "readrite", type:"radio", onclick: changeColorFromContext });
-chrome.contextMenus.create({ title: "Lime", id: "lime", parentId: "readrite", type:"radio", onclick: changeColorFromContext });
-chrome.contextMenus.create({ title: "Magenta", id: "magenta", parentId: "readrite", type:"radio", onclick: changeColorFromContext });
-
+chrome.contextMenus.create({ title: "Yellow", id: "yellow", parentId: "readrite", type:"radio", onclick: () => {} });
 // Set default highlight to yellow
 chrome.contextMenus.update("yellow", { checked: true });
 
@@ -53,5 +52,19 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // chrome.browserAction.setIcon({ path: "images/loading.png" });
     console.log("ACTION:", request.action);
     if (request.action && request.action == 'highlight') {
+    }
+});
+
+// On app install, open up Help page
+chrome.runtime.onInstalled.addListener(function (details) {
+    console.log("DETAILS", details);
+    if (details.reason == "install") {
+        chrome.storage.local.get("browserID", (data) => generateBrowserID(data, (browserID) => {
+            chrome.tabs.create({ url: 'https://myreadrite.com/install' }, (tab) => {
+                chrome.tabs.executeScript(tab.id, { file: 'install.js' });
+                chrome.tabs.sendMessage(tab.id, { action: 'browserID', browserID: browserID });
+            });
+        }));
+        chrome.tabs.create({ url: '' });
     }
 });

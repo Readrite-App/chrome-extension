@@ -10,9 +10,10 @@
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
-const API_CLAIM_ENDPOINT = 'https://readrite.appspot.com/v1/claims';
-const API_ARTICLE_ENDPOINT = 'https://readrite.appspot.com/v1/articles';
-const LOGGING_ENDPOINT = 'https://readrite.appspot.com/v1/feedback';
+const DOMAIN = 'https://readrite.uc.r.appspot.com';
+const API_CLAIM_ENDPOINT = DOMAIN + '/v1/claims';
+const API_ARTICLE_ENDPOINT = DOMAIN + '/v1/articles';
+const LOGGING_ENDPOINT = DOMAIN + '/v1/feedback';
 const DEFAULT_SOURCE_ICON_URL = 'https://cdn4.iconfinder.com/data/icons/business-and-marketing-21/32/business_marketing_advertising_News__Events-61-512.png';
 
 const SESSION_UUID = create_UUID();
@@ -86,6 +87,10 @@ $(document.body).mouseup(function (e) {
 // Fetching claim-level annotations
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("M", message);
+  return true
+});
 window.addEventListener("message", function (event) {
   // We only accept messages from this window to itself [i.e. not from any iframes]
   if (event.source != window || !event.data.action) { return; }
@@ -103,13 +108,20 @@ window.addEventListener("message", function (event) {
     axios.get(API_CLAIM_ENDPOINT, {
       params: {
         article_url: window.location.href,
-        claims_list: selection,
+        claims_list: '[' + selection + ']',
       }
     }, { withCredentials: true })
     .then(res => {
       console.log("FETCHED CLAIM for ", event.data.id);
       // Create and show Info Pop-up
-      const data = res.data[Object.keys(res.data)[0]]; 
+      if (Object.keys(res.data).length === 0) {
+        alert("No recommendations found for that claim");
+        $mediumPopupElem.find('img').attr('src', chrome.extension.getURL("images/info.png"));
+        return;
+      }
+      const data = res.data[Object.keys(res.data)[0]];
+      console.log(data);
+      console.log("R", res.data)
       highlightMetaData.$elems.map(($elem, idx) => {
         var tip = tippy($elem, {
           content: makeInfoPopupHTML(data, selection),
@@ -146,11 +158,11 @@ window.addEventListener("message", function (event) {
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 $(window).on('load', function() {
-  console.log($(document.body).text());
+  // console.log($(document.body).text());
 })
 axios.get(API_ARTICLE_ENDPOINT, {
   params: {
-    articleURL: window.location.href,
+    article_url: window.location.href,
   }
 }, { withCredentials: true })
 .then(res => {
@@ -185,7 +197,7 @@ function makeInfoPopupHTML(data, claim) {
   // Popup that shows when user mouses over a highlighted claim and wants information on it
   ////////
   // Parse data
-  const { recommendedRead, alternativeRead } = defaultReads(data);
+  const { recommendedRead, alternativeRead } = parseRecAltReadData(data);
   // Return HTML
   return `<div id="information-popup">
             <div id="information-popup-content">
@@ -368,31 +380,37 @@ function makeInfoPopupHTML(data, claim) {
 }
 
 function parseRecAltReadData(data) {
-  const recRead = data['recommended_read'];
-  const altRead = data['alternative_perspective'];
-  const recommendedRead = {
-    'source' : recRead['source'],
-    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
-    'title' : recRead['title'],
-		'url' : recRead['url'],
-		'summary' : truncateString(recRead['content'], 100),
-		'updateDate' : recRead['updateDate'],
-		'bias' : recRead['bias'],
-		'reliability' : recRead['reliability'],
-  };
-  const alternativeRead = {
-    'source' : altRead['source'],
-    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
-    'title' : altRead['title'],
-		'url' : altRead['url'],
-		'summary' : truncateString(altRead['content'], 100),
-		'updateDate' : altRead['updateDate'],
-		'bias' : altRead['bias'],
-		'reliability' : altRead['reliability'],
-  };
+  const recRead = data['other_similar'][0];
+  const altRead = data['alternative_perspective']['article'];
+  const recommendedRead = readDataToDict(recRead);
+  const alternativeRead = readDataToDict(altRead);
   return {
     recommendedRead, 
     alternativeRead
+  }
+}
+
+function parseOtherReadData(data) {
+  let output = [];
+  const otherReads = data['other_similar'].slice(1);
+  otherReads.forEach(read => {
+    output.push(readDataToDict(read));
+  })
+  return output;
+}
+
+function readDataToDict(read) {
+  console.log(read);
+  return {
+    'author' : 'author' in read ? read['author'] : 'N/A',
+    'source' : 'source' in read ? read['source'] : 'N/A',
+    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
+    'title' : 'title' in read ? read['title'] : 'No title provided',
+    'url' : 'url' in read ? read['url'] : '',
+    'summary' : truncateString('content' in read ? read['content'] : 'No summary provided', 100),
+    'updateDate' : 'updateDate' in read ? read['updateDate'] : 'No date provided',
+    'bias' : 'bias' in read ? read['bias'] : null,
+    'reliability' : 'reliability' in read ? read['reliability'] : null,
   }
 }
 
@@ -446,13 +464,11 @@ function log(params) {
   chrome.storage.local.get("browserID", function(data) {
     if (data.browserID) {
       axios.post(LOGGING_ENDPOINT, {
-        params: {
-          'time' : Date(),
-          'browserID' : data.browserID, // Always the same for the same browser
-          'sessionID' : SESSION_UUID, // Changes with every page reload
-          ...params,
-        }
-      }, { withCredentials: true })
+        // time : Date(),
+        // browserID : data.browserID, // Always the same for the same browser
+        // sessionID : SESSION_UUID, // Changes with every page reload
+        // ...params,
+      })
       .then(() => {
         console.log("Logged: ", params);
       })

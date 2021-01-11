@@ -15,11 +15,14 @@
                     <img id="logo" src="https://static.wixstatic.com/media/5133d9_b8b55f31853d49f5bc397daecd43d057~mv2.png/v1/crop/x_43,y_6,w_565,h_299/fill/w_116,h_61,al_c,q_85,usm_0.66_1.00_0.01/readrite.webp" />
                 </div>
                 <div>
-                    <input type="checkbox" checked  data-height="30" data-toggle="toggle">
+                    <input id="isActiveCheckbox" type="checkbox" checked  data-height="30" data-toggle="toggle">
                 </div>
             </div>
             <hr />
-            <div id="loading" class="row text-center">
+            <div id="content">
+                <p>Browser ID: <span id="browserID">--</span></p>
+            </div>
+            <!-- <div id="loading" class="row text-center">
                 <div class="col-12">
                     <p>Loading analysis...</p>
                     <img id="loading-spinner" src="https://i.imgur.com/8Wx0oPN.gif" />
@@ -56,7 +59,7 @@
                         <i class="fas fa-envelope"></i>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <script src="js/jquery-3.5.1.min.js"></script>

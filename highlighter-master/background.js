@@ -35,9 +35,9 @@ function generateBrowserID(data, callback) {
                 );
             }
         });
-        callback(uid);
+        return callback(uid);
     }
-    callback(data.browserID);
+    return callback(data.browserID);
 }
 chrome.storage.local.get("browserID", (data) => generateBrowserID(data, () => {}));
 
@@ -50,21 +50,29 @@ chrome.contextMenus.update("yellow", { checked: true });
 // Listen to messages from content scripts
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // chrome.browserAction.setIcon({ path: "images/loading.png" });
-    console.log("ACTION:", request.action);
     if (request.action && request.action == 'highlight') {
     }
 });
 
 // On app install, open up Help page
 chrome.runtime.onInstalled.addListener(function (details) {
-    console.log("DETAILS", details);
     if (details.reason == "install") {
         chrome.storage.local.get("browserID", (data) => generateBrowserID(data, (browserID) => {
-            chrome.tabs.create({ url: 'https://myreadrite.com/install' }, (tab) => {
-                chrome.tabs.executeScript(tab.id, { file: 'install.js' });
-                chrome.tabs.sendMessage(tab.id, { action: 'browserID', browserID: browserID });
+            chrome.tabs.create({ url: `https://myreadrite.com/install?browserID=${browserID}` }, (tab) => {
+                // chrome.tabs.executeScript(tab.id, { file: 'install.js' });
+                // chrome.tabs.sendMessage(tab.id, { action: 'browserID', browserID: browserID });
             });
         }));
-        chrome.tabs.create({ url: '' });
     }
 });
+
+function enableExtension() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+        chrome.tabs.sendMessage(tabs[0].id, { action: "enableExtension"}, function(response) {});  
+    });
+}
+function disableExtension() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+        chrome.tabs.sendMessage(tabs[0].id, { action: "disableExtension"}, function(response) {});  
+    });
+}

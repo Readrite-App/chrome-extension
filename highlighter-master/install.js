@@ -1,9 +1,8 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    alert("YO");
+    console.log("CHROME");
+    return true;
 });
 
 window.addEventListener("message", function (event) {
-    alert("HI");
+    console.log("WINDOW");
 });
-
-console.log("KJKJ");

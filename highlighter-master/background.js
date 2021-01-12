@@ -50,7 +50,26 @@ chrome.contextMenus.update("yellow", { checked: true });
 // Listen to messages from content scripts
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // chrome.browserAction.setIcon({ path: "images/loading.png" });
-    if (request.action && request.action == 'highlight') {
+    console.log(request);
+    if (request.action && request.action === 'highlight') {
+        return true;
+    }
+    else if (request.action && request.action === 'sendPOSTRequest') {
+      axios.post(request.url, request.params, { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json;charset=UTF-8',
+            "Access-Control-Allow-Origin": "*",
+          }
+        })
+      .then(() => {
+        sendResponse({ success: 1 })
+      })
+      .catch((error) => {
+        console.log("Error POSTing: ", error);
+        sendResponse({ error: 1 })
+      })
+      return true;
     }
 });
 

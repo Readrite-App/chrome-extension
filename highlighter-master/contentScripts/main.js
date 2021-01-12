@@ -113,15 +113,13 @@ window.addEventListener("message", function (event) {
     }, { withCredentials: true })
     .then(res => {
       console.log("FETCHED CLAIM for ", event.data.id);
+      const data = res.data[Object.keys(res.data)[0]];
       // Create and show Info Pop-up
-      if (Object.keys(res.data).length === 0) {
+      if (data[0] === 'No recommendations found') {
         alert("No recommendations found for that claim");
         $mediumPopupElem.find('img').attr('src', chrome.extension.getURL("images/info.png"));
         return;
       }
-      const data = res.data[Object.keys(res.data)[0]];
-      console.log(data);
-      console.log("R", res.data)
       highlightMetaData.$elems.map(($elem, idx) => {
         var tip = tippy($elem, {
           content: makeInfoPopupHTML(data, selection),
@@ -198,6 +196,7 @@ function makeInfoPopupHTML(data, claim) {
   ////////
   // Parse data
   const { recommendedRead, alternativeRead } = parseRecAltReadData(data);
+  const { otherReads } = parseOtherReadData(data);
   // Return HTML
   return `<div id="information-popup">
             <div id="information-popup-content">
@@ -380,7 +379,7 @@ function makeInfoPopupHTML(data, claim) {
 }
 
 function parseRecAltReadData(data) {
-  const recRead = data['other_similar'][0];
+  const recRead = data['recommended_read']['article'];
   const altRead = data['alternative_perspective']['article'];
   const recommendedRead = readDataToDict(recRead);
   const alternativeRead = readDataToDict(altRead);
@@ -392,11 +391,13 @@ function parseRecAltReadData(data) {
 
 function parseOtherReadData(data) {
   let output = [];
-  const otherReads = data['other_similar'].slice(1);
+  const otherReads = data['other_similar'];
   otherReads.forEach(read => {
     output.push(readDataToDict(read));
   })
-  return output;
+  return {
+    otherReads: output
+  }
 }
 
 function readDataToDict(read) {
@@ -463,18 +464,37 @@ function isSelectedTextValid(e) {
 function log(params) {
   chrome.storage.local.get("browserID", function(data) {
     if (data.browserID) {
-      axios.post(LOGGING_ENDPOINT, {
-        // time : Date(),
-        // browserID : data.browserID, // Always the same for the same browser
-        // sessionID : SESSION_UUID, // Changes with every page reload
-        // ...params,
-      })
-      .then(() => {
+      axios.get(LOGGING_ENDPOINT, {
+        params: {
+          time : Date(),
+          browserID : data.browserID, // Always the same for the same browser
+          sessionID : SESSION_UUID, // Changes with every page reload
+          ...params,
+        }
+      }, { withCredentials: true })
+      .then(res => {
         console.log("Logged: ", params);
       })
-      .catch((error) => {
-        console.log("Error logging: ", error);
+      .catch((err) => {
+        console.log(err);
       })
+      // chrome.runtime.sendMessage({
+      //   action: 'sendPOSTRequest',
+      //   url: LOGGING_ENDPOINT,
+      //   params: {
+      //     time : Date(),
+      //     browserID : data.browserID, // Always the same for the same browser
+      //     sessionID : SESSION_UUID, // Changes with every page reload
+      //     ...params,
+      //   }
+      // }, response => {
+      //   if (response.success) {
+      //     console.log("Logged: ", params, response);
+      //   }
+      //   else {
+      //     console.log("ERROR Logging");
+      //   }
+      // })
     }
   });
 }

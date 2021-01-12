@@ -12,4 +12,4 @@
 
 The extension should now be installed!
 
-The highlighting can be kind of annoying on certain websites, so I would recommend only enabling the extension for specific websites by right-clicking the icon in your CHrome toolbar.
+The highlighting can be kind of annoying on certain websites, so I would recommend only enabling the extension for specific websites by right-clicking the icon in your Chrome toolbar and choosing to enable it for specific sites.

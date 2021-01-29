@@ -10,9 +10,10 @@
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
-const API_CLAIM_ENDPOINT = 'https://readrite.appspot.com/v1/claims';
-const API_ARTICLE_ENDPOINT = 'https://readrite.appspot.com/v1/articles';
-const LOGGING_ENDPOINT = 'https://readrite.appspot.com/v1/feedback';
+const DOMAIN = 'https://readrite.uc.r.appspot.com';
+const API_CLAIM_ENDPOINT = DOMAIN + '/v1/claims';
+const API_ARTICLE_ENDPOINT = DOMAIN + '/v1/articles';
+const LOGGING_ENDPOINT = DOMAIN + '/v1/feedback';
 const DEFAULT_SOURCE_ICON_URL = 'https://cdn4.iconfinder.com/data/icons/business-and-marketing-21/32/business_marketing_advertising_News__Events-61-512.png';
 
 const SESSION_UUID = create_UUID();
@@ -86,6 +87,9 @@ $(document.body).mouseup(function (e) {
 // Fetching claim-level annotations
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  return true
+});
 window.addEventListener("message", function (event) {
   // We only accept messages from this window to itself [i.e. not from any iframes]
   if (event.source != window || !event.data.action) { return; }
@@ -103,13 +107,18 @@ window.addEventListener("message", function (event) {
     axios.get(API_CLAIM_ENDPOINT, {
       params: {
         article_url: window.location.href,
-        claims_list: selection,
+        claims_list: '[' + selection + ']',
       }
     }, { withCredentials: true })
     .then(res => {
       console.log("FETCHED CLAIM for ", event.data.id);
+      const data = res.data[Object.keys(res.data)[0]];
       // Create and show Info Pop-up
-      const data = res.data[Object.keys(res.data)[0]]; 
+      if (data[0] === 'No recommendations found') {
+        alert("No recommendations found for that claim");
+        $mediumPopupElem.find('img').attr('src', chrome.extension.getURL("images/info.png"));
+        return;
+      }
       highlightMetaData.$elems.map(($elem, idx) => {
         var tip = tippy($elem, {
           content: makeInfoPopupHTML(data, selection),
@@ -146,11 +155,11 @@ window.addEventListener("message", function (event) {
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 $(window).on('load', function() {
-  console.log($(document.body).text());
+  // console.log($(document.body).text());
 })
 axios.get(API_ARTICLE_ENDPOINT, {
   params: {
-    articleURL: window.location.href,
+    article_url: window.location.href,
   }
 }, { withCredentials: true })
 .then(res => {
@@ -185,11 +194,9 @@ function makeInfoPopupHTML(data, claim) {
   // Popup that shows when user mouses over a highlighted claim and wants information on it
   ////////
   // Parse data
-  const { recommendedRead, alternativeRead } = defaultReads(data);
-  // Return HTML
-  return `<div id="information-popup">
-            <div id="information-popup-content">
-                <h2 class="hover-tools-header">
+  const { recommendedRead, alternativeRead } = parseRecAltReadData(data);
+  const { otherReads } = parseOtherReadData(data);
+  const recReadHTML = recommendedRead ? `<h2 class="hover-tools-header">
                   <img 
                     src="https://www.pngitem.com/pimgs/m/453-4536097_recommended-land-recommended-icon-png-transparent-png.png" 
                     class="hover-tools-header-icon"
@@ -242,121 +249,127 @@ function makeInfoPopupHTML(data, claim) {
                         }})"
                       />
                     </div>
+                </div>` : '';
+  const altReadHTML = alternativeRead ? `<h2 class="hover-tools-header">
+                <img 
+                  src="https://static.thenounproject.com/png/331-200.png" 
+                  class="hover-tools-header-icon"
+                />
+                Alternative View
+                <div class="hover-tools-article-byline">
+                  ${alternativeRead.title} | ${alternativeRead.updateDate || 'No Date'}
                 </div>
-                <h2 class="hover-tools-header">
-                  <img 
-                    src="https://static.thenounproject.com/png/331-200.png" 
-                    class="hover-tools-header-icon"
+              </h2>
+              <div class="article-container">
+                  <img
+                      src="${alternativeRead.sourceIcon || DEFAULT_SOURCE_ICON_URL}"
+                      class="hover-tools-article-news-icon"
                   />
-                  Alternative View
-                  <div class="hover-tools-article-byline">
-                    ${alternativeRead.title} | ${alternativeRead.updateDate || 'No Date'}
+                  <div class="hover-tools-article-text">
+                    ${alternativeRead.summary}...
+                    <a 
+                      href="${alternativeRead.url}" target="_blank"  
+                      onClick="window.postMessage({ action: 'log', event: 'annotationRecClick', data: { 
+                        article: '${window.location.href}', 
+                        claim: '${claim}', 
+                        rec: '${alternativeRead.url}',
+                        isRec: false,
+                      }})"
+                    >
+                      Keep reading
+                  </a>
                   </div>
-                </h2>
-                <div class="article-container">
-                    <img
-                        src="${alternativeRead.sourceIcon || DEFAULT_SOURCE_ICON_URL}"
-                        class="hover-tools-article-news-icon"
+                  <div class="hover-tools-article-feedback">
+                    <img 
+                      src="${chrome.extension.getURL("images/happy.png")}" 
+                      class="tooltip-feedback-icon" 
+                      onClick="window.postMessage({ action: 'log', event: 'annotationRecFeedback', data: { 
+                        article: '${window.location.href}', 
+                        claim: '${claim}', 
+                        rec: '${alternativeRead.url}',
+                        isRec: false,
+                        feedback: true
+                      }})"
                     />
-                    <div class="hover-tools-article-text">
-                      ${alternativeRead.summary}...
-                      <a 
-                        href="${alternativeRead.url}" target="_blank"  
-                        onClick="window.postMessage({ action: 'log', event: 'annotationRecClick', data: { 
-                          article: '${window.location.href}', 
-                          claim: '${claim}', 
-                          rec: '${alternativeRead.url}',
-                          isRec: false,
-                        }})"
-                      >
-                        Keep reading
-                    </a>
-                    </div>
-                    <div class="hover-tools-article-feedback">
-                      <img 
-                        src="${chrome.extension.getURL("images/happy.png")}" 
-                        class="tooltip-feedback-icon" 
-                        onClick="window.postMessage({ action: 'log', event: 'annotationRecFeedback', data: { 
-                          article: '${window.location.href}', 
-                          claim: '${claim}', 
-                          rec: '${alternativeRead.url}',
-                          isRec: false,
-                          feedback: true
-                        }})"
-                      />
-                      <img 
-                        src="${chrome.extension.getURL("images/unhappy.png")}" 
-                        class="tooltip-feedback-icon" 
-                        onClick="window.postMessage({ action: 'log', event: 'annotationRecFeedback', data: { 
-                          article: '${window.location.href}', 
-                          claim: '${claim}', 
-                          rec: '${alternativeRead.url}',
-                          isRec: false,
-                          feedback: false
-                        }})"
-                      />
-                    </div>
-                </div> 
-                <h2 class="hover-tools-header">
+                    <img 
+                      src="${chrome.extension.getURL("images/unhappy.png")}" 
+                      class="tooltip-feedback-icon" 
+                      onClick="window.postMessage({ action: 'log', event: 'annotationRecFeedback', data: { 
+                        article: '${window.location.href}', 
+                        claim: '${claim}', 
+                        rec: '${alternativeRead.url}',
+                        isRec: false,
+                        feedback: false
+                      }})"
+                    />
+                  </div>
+              </div>` : '';
+  const similarClaimsHTML = false ? `<h2 class="hover-tools-header">
+              <img 
+                src="https://freeiconshop.com/wp-content/uploads/edd/checkmark-flat.png" 
+                class="hover-tools-header-icon"
+              />
+              Around the Web
+            </h2>
+            <p>Similar claims were found in the following articles:</p>
+            <div class="similar-claims-container">
+              <div class="similar-claims-column">
+                <div class="similar-claims-article left">
                   <img 
-                    src="https://freeiconshop.com/wp-content/uploads/edd/checkmark-flat.png" 
+                    src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
                     class="hover-tools-header-icon"
                   />
-                  Around the Web
-                </h2>
-                <p>Similar claims were found in the following articles:</p>
-                <div class="similar-claims-container">
-                  <div class="similar-claims-column">
-                    <div class="similar-claims-article left">
-                      <img 
-                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
-                        class="hover-tools-header-icon"
-                      />
-                      <span>News Site</span>
-                    </div>
-                    <div class="similar-claims-article left">
-                      <img 
-                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
-                        class="hover-tools-header-icon"
-                      />
-                      <span>News Site 2</span>
-                    </div>
-                    <p>Left</p>
-                  </div>
-                  <div class="similar-claims-column">
-                    <div class="similar-claims-article center-left">
-                      <img 
-                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
-                        class="hover-tools-header-icon"
-                      />
-                      <span>News Site</span>
-                    </div>
-                    <p>Center Left</p>
-                  </div>
-                  <div class="similar-claims-column">
-                    <div class="similar-claims-article center">
-                      <img 
-                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
-                        class="hover-tools-header-icon"
-                      />
-                      <span>News Site</span>
-                    </div>
-                    <p>Center</p>
-                  </div>
-                  <div class="similar-claims-column">
-                    <p>Center Right</p>
-                  </div>
-                  <div class="similar-claims-column">
-                    <div class="similar-claims-article right">
-                      <img 
-                        src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
-                        class="hover-tools-header-icon"
-                      />
-                      <span>News Site</span>
-                    </div>
-                    <p>Right</p>
-                  </div>
+                  <span>News Site</span>
                 </div>
+                <div class="similar-claims-article left">
+                  <img 
+                    src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                    class="hover-tools-header-icon"
+                  />
+                  <span>News Site 2</span>
+                </div>
+                <p>Left</p>
+              </div>
+              <div class="similar-claims-column">
+                <div class="similar-claims-article center-left">
+                  <img 
+                    src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                    class="hover-tools-header-icon"
+                  />
+                  <span>News Site</span>
+                </div>
+                <p>Center Left</p>
+              </div>
+              <div class="similar-claims-column">
+                <div class="similar-claims-article center">
+                  <img 
+                    src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                    class="hover-tools-header-icon"
+                  />
+                  <span>News Site</span>
+                </div>
+                <p>Center</p>
+              </div>
+              <div class="similar-claims-column">
+                <p>Center Right</p>
+              </div>
+              <div class="similar-claims-column">
+                <div class="similar-claims-article right">
+                  <img 
+                    src="https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg" 
+                    class="hover-tools-header-icon"
+                  />
+                  <span>News Site</span>
+                </div>
+                <p>Right</p>
+              </div>
+            </div>` : '';
+  // Return HTML
+  return `<div id="information-popup">
+            <div id="information-popup-content">
+                ${recReadHTML}
+                ${altReadHTML}
+                ${similarClaimsHTML}
             </div>
             <div id="information-popup-footer">
               <img 
@@ -368,31 +381,38 @@ function makeInfoPopupHTML(data, claim) {
 }
 
 function parseRecAltReadData(data) {
-  const recRead = data['recommended_read'];
-  const altRead = data['alternative_perspective'];
-  const recommendedRead = {
-    'source' : recRead['source'],
-    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
-    'title' : recRead['title'],
-		'url' : recRead['url'],
-		'summary' : truncateString(recRead['content'], 100),
-		'updateDate' : recRead['updateDate'],
-		'bias' : recRead['bias'],
-		'reliability' : recRead['reliability'],
-  };
-  const alternativeRead = {
-    'source' : altRead['source'],
-    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
-    'title' : altRead['title'],
-		'url' : altRead['url'],
-		'summary' : truncateString(altRead['content'], 100),
-		'updateDate' : altRead['updateDate'],
-		'bias' : altRead['bias'],
-		'reliability' : altRead['reliability'],
-  };
+  const recRead = 'recommended_read' in data ? data['recommended_read']['article'] : null;
+  const altRead = 'alternative_perspective' in data ? data['alternative_perspective']['article'] : null;
+  const recommendedRead = readDataToDict(recRead);
+  const alternativeRead = readDataToDict(altRead);
   return {
     recommendedRead, 
     alternativeRead
+  }
+}
+
+function parseOtherReadData(data) {
+  let output = [];
+  const otherReads = data['other_similar'];
+  otherReads.forEach(read => {
+    output.push(readDataToDict(read));
+  })
+  return {
+    otherReads: output
+  }
+}
+
+function readDataToDict(read) {
+  return {
+    'author' : 'author' in read ? read['author'] : 'N/A',
+    'source' : 'source' in read ? read['source'] : 'N/A',
+    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
+    'title' : 'title' in read ? read['title'] : 'No title provided',
+    'url' : 'url' in read ? read['url'] : '',
+    'summary' : truncateString('content' in read ? read['content'] : 'No summary provided', 100),
+    'updateDate' : 'updateDate' in read ? read['updateDate'] : 'No date provided',
+    'bias' : 'bias' in read ? read['bias'] : null,
+    'reliability' : 'reliability' in read ? read['reliability'] : null,
   }
 }
 
@@ -445,20 +465,37 @@ function isSelectedTextValid(e) {
 function log(params) {
   chrome.storage.local.get("browserID", function(data) {
     if (data.browserID) {
-      axios.post(LOGGING_ENDPOINT, {
+      axios.get(LOGGING_ENDPOINT, {
         params: {
-          'time' : Date(),
-          'browserID' : data.browserID, // Always the same for the same browser
-          'sessionID' : SESSION_UUID, // Changes with every page reload
+          time : Date(),
+          browserID : data.browserID, // Always the same for the same browser
+          sessionID : SESSION_UUID, // Changes with every page reload
           ...params,
         }
       }, { withCredentials: true })
-      .then(() => {
+      .then(res => {
         console.log("Logged: ", params);
       })
-      .catch((error) => {
-        console.log("Error logging: ", error);
+      .catch((err) => {
+        console.log(err);
       })
+      // chrome.runtime.sendMessage({
+      //   action: 'sendPOSTRequest',
+      //   url: LOGGING_ENDPOINT,
+      //   params: {
+      //     time : Date(),
+      //     browserID : data.browserID, // Always the same for the same browser
+      //     sessionID : SESSION_UUID, // Changes with every page reload
+      //     ...params,
+      //   }
+      // }, response => {
+      //   if (response.success) {
+      //     console.log("Logged: ", params, response);
+      //   }
+      //   else {
+      //     console.log("ERROR Logging");
+      //   }
+      // })
     }
   });
 }

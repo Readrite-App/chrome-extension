@@ -28,6 +28,12 @@
                    "contentScripts/main.js"],
             "css": ["css/bootstrap.min.css", "showpopup.css"],
             "all_frames": true
+        },
+        {
+            "matches": ["<all_urls>"],
+            "js": ["contentScripts/topbar.js"],
+            "css": ["css/bootstrap.min.css", "showpopup.css"],
+            "all_frames": false
         }
     ],
 

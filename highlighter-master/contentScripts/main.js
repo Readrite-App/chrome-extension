@@ -18,8 +18,28 @@ const DEFAULT_SOURCE_ICON_URL = 'https://cdn4.iconfinder.com/data/icons/business
 
 const SESSION_UUID = create_UUID();
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 $(window).on("load", function() {
   log_articleLoad(window.location.href);
+
+  // var client = new HttpClient();
+  // client.get('https://readrite.uc.r.appspot.com/v1/claims?article_url='+ window.location.href +'&claims_list=[%27none%27]&user_test=true', function(response) {
+  //   console.log("kidlaroi");
+  //   console.log(response);
+  //   console.log('https://readrite.uc.r.appspot.com/v1/claims?article_url='+ window.location.href +'&claims_list=[%27none%27]&user_test=true');
+  // });
+
 })
 $(window).on("unload", function() {
   log_articleLeave(window.location.href);
@@ -59,7 +79,7 @@ function createRangyClassApplier(className) {
           content: makeMediumPopupHTML(highlightID),
           allowHTML: true,
           interactive: true,
-          interactiveDebsunce: 999999, // Stay until user clicks away
+          interactiveDebounce: 999999, // Stay until user clicks away
         });
         highlightMetaData.mediumPopups.push(tip);
         highlightMetaData.$elems.push($elem);
@@ -77,9 +97,162 @@ $(document.body).mouseup(function (e) {
     // Set unique classname for this highlight
     highlighter.highlightSelection('readrite-highlight');
     // Only show one Medium popup at first
-    highlightMetaData.mediumPopups.map((val, idx) => idx === 0 ? val.show() : {});
+    highlightMetaData.mediumPopups.map((val, idx) => idx === 0 ? val.show() : {}); //should be a for each
   }
 });
+
+
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+// Pre-highlighting annotations
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+
+function prehighlightmain(a)
+  {
+    if(window.find)
+    {
+      if(window.find(a)) {
+        console.log("Main PreHighlight If");
+        console.log(a);
+        var rng=window.getSelection().getRangeAt(0);
+        rng.deleteContents();
+        const newDiv = document.createElement("mark");
+        newDiv.id = "pizza" + getRandomInt(0, 99999).toString();
+        const newContent = document.createTextNode(a);
+        newDiv.appendChild(newContent);
+        rng.insertNode(newDiv);
+
+        console.log("elemishere");
+        console.log(newDiv);
+        console.log("idishere");
+        console.log(newDiv.id);
+
+        // var tipz = tippy('#' + newDiv.id, {
+        //   content: "I'm a Tippy tooltip! : " + newDiv.id,
+        //   // allowHTML: true,
+        //   interactive: true,
+        //   interactiveDebounce: 999999, // Stay until user clicks away
+        // });
+
+
+        // highlightMetaData.mediumPopups.push(tipz);
+        // highlightMetaData.$elems.push('#' + newDiv.id);
+
+        highlightMetaData.$elems.push('#' + newDiv.id);
+        const selection = a;
+
+    // Get annotations for this claim
+      axios.get(API_CLAIM_ENDPOINT, {
+        params: {
+          article_url: window.location.href,
+          claims_list: '[' + selection + ']',
+        }
+      }, { withCredentials: true })
+      .then(res => {
+        const data = res.data[Object.keys(res.data)[0]];
+        // Create and show Info Pop-up
+        if (data[0] === 'No recommendations found') {
+          alert("No recommendations found for that claim");
+          $mediumPopupElem.find('img').attr('src', chrome.extension.getURL("images/info.png"));
+          return;
+        }
+        // highlightMetaData.$elems.map(($elem, idx) => {
+          var tip = tippy('#' + newDiv.id, {
+            content: makeInfoPopupHTML(data, selection),
+            allowHTML: true,
+            interactive: true,
+            theme: 'informational',
+          })
+          highlightMetaData.infoPopups.push(tip);
+        // });
+        // Only show one Info popup
+        highlightMetaData.infoPopups.map((val, idx) => idx === 0 ? val.show() : {})
+        // Hide Medium popups that are showing
+        highlightMetaData.mediumPopups.map((val, idx) => val.destroy());
+      })
+      .catch(err => {
+        console.log("FAILURE", err);
+      })
+
+
+
+
+
+        while(window.find(a))
+          {
+            var rng=window.getSelection().getRangeAt(0);
+            rng.deleteContents();
+            const newDiv = document.createElement("mark");
+            const newContent = document.createTextNode(a);
+            newDiv.appendChild(newContent);
+            rng.insertNode(newDiv);
+          }
+      } else if(window.find(a, aBackwards=true)) {
+        console.log("Main PreHighlight Else");
+        console.log(a);
+        var rng=window.getSelection().getRangeAt(0);
+        rng.deleteContents();
+        const newDiv = document.createElement("mark");
+        const newContent = document.createTextNode(a);
+        newDiv.appendChild(newContent);
+        rng.insertNode(newDiv);
+        while(window.find(a, aBackwards=true))
+          {
+            var rng=window.getSelection().getRangeAt(0);
+            rng.deleteContents();
+            const newDiv = document.createElement("mark");
+            const newContent = document.createTextNode(a);
+            newDiv.appendChild(newContent);
+            rng.insertNode(newDiv);
+          }
+      }
+    }
+    else if(document.body.createTextRange)
+    {
+      console.log("Main PreHighlight Elif");
+      console.log(a);
+      var rng=document.body.createTextRange();
+      while(rng.findText(a))
+      {
+        rng.pasteHTML(a);
+      }
+    }
+  }
+
+  var HttpClient = function() {
+    this.get = function(aUrl, aCallback) {
+        var anHttpRequest = new XMLHttpRequest();
+        anHttpRequest.onreadystatechange = function() { 
+            if (anHttpRequest.readyState == 4 && anHttpRequest.status == 200)
+                aCallback(anHttpRequest.responseText);
+        }
+
+        anHttpRequest.open( "GET", aUrl, true );            
+        anHttpRequest.send( null );
+    }
+}
+
+
+var i;
+
+
+var client = new HttpClient();
+client.get('https://readrite.uc.r.appspot.com/v2/articles?article_url=' + window.location.href, function(response) {
+  var responseJson = JSON.parse(response);
+  var prehighlightDict = responseJson['important_sentences'];
+  if (prehighlightDict) {
+    var prehighlightArrayKeys = Object.keys(prehighlightDict);
+    for (i = 0; i < prehighlightArrayKeys.length; i++) {
+      console.log("Main PreHighlight" + i);
+      console.log(prehighlightArrayKeys[i]);
+      prehighlightmain(prehighlightArrayKeys[i]);
+    }
+  }
+});
+
+
+
 
 
 ////////////////////////////////////////////////////////
@@ -195,6 +368,7 @@ function makeInfoPopupHTML(data, claim) {
   ////////
   // Parse data
   const { recommendedRead, alternativeRead } = parseRecAltReadData(data);
+  const similarClaimsGiven = true;
   const { otherReads } = parseOtherReadData(data);
   const recReadHTML = recommendedRead ? `<h2 class="hover-tools-header">
                   <img 
@@ -304,7 +478,7 @@ function makeInfoPopupHTML(data, claim) {
                     />
                   </div>
               </div>` : '';
-  const similarClaimsHTML = false ? `<h2 class="hover-tools-header">
+  const similarClaimsHTML = similarClaimsGiven ? `<h2 class="hover-tools-header">
               <img 
                 src="https://freeiconshop.com/wp-content/uploads/edd/checkmark-flat.png" 
                 class="hover-tools-header-icon"
@@ -419,7 +593,7 @@ function readDataToDict(read) {
 function defaultReads(data) {
   const recommendedRead = {
     'source' : 'AP',
-    'sourceIcon' : 'https://2.bp.blogspot.com/-sJ8mGd6LmkU/T0ajVykwreI/AAAAAAAAESA/WNOI4QF4lIw/s1600/AP+logo+2012.png',
+    'sourceIcon' : '//logo.clearbit.com/apnews.com',
     'title' : 'Fake Video of Biden Circulates',
 		'url' : 'https://apnews.com',
 		'summary' : ' The video was shared on Twitter by a person who accused Biden of forgetting what state he was in. One version of the false video circulating on Twitter was viewed more than 1.1 million times in less than 24 hours',
@@ -429,7 +603,7 @@ function defaultReads(data) {
   };
   const alternativeRead = {
     'source' : 'Fox News',
-    'sourceIcon' : 'https://lolaredpr.com/wp-content/uploads/transparent-wsj-logo-png-the-wall-street-journal-c-8c851bcb8d9e4624.jpg',
+    'sourceIcon' : '//logo.clearbit.com/foxnews.com',
     'title' : 'Disinformation Abounds as Election Day Nears',
 		'url' : 'http://foxnews.com',
 		'summary' : '"He forgets where he\'s at, he forgets who he\'s running against, he forgets what he\'s running for," she said. Asked when Biden had forgotten who he was running against, she cited the misleading clip the Trump campaign had been pushing all',

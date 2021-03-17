@@ -238,15 +238,18 @@ var i;
 
 
 var client = new HttpClient();
+console.log('BANDAAAAY');
 client.get('https://readrite.uc.r.appspot.com/v2/articles?article_url=' + window.location.href, function(response) {
+  console.log('LANDAAAAY');
   var responseJson = JSON.parse(response);
-  var prehighlightDict = responseJson['important_sentences'];
+  var prehighlightDict = responseJson['important_sentence_order'];
+  console.log("mainhighlighting");
+  console.log(prehighlightDict);
   if (prehighlightDict) {
-    var prehighlightArrayKeys = Object.keys(prehighlightDict);
-    for (i = 0; i < prehighlightArrayKeys.length; i++) {
-      console.log("Main PreHighlight" + i);
-      console.log(prehighlightArrayKeys[i]);
-      prehighlightmain(prehighlightArrayKeys[i]);
+    console.log("dictin: ");
+    for (i = 0; i < Object.keys(prehighlightDict).length; i++) {
+      console.log("Highlighting: " + prehighlightDict[i]);
+      prehighlightmain(prehighlightDict[i]);
     }
   }
 });
@@ -548,7 +551,7 @@ function makeInfoPopupHTML(data, claim) {
             <div id="information-popup-footer">
               <img 
                 src="https://static.wixstatic.com/media/5133d9_b8b55f31853d49f5bc397daecd43d057~mv2.png/v1/crop/x_43,y_6,w_565,h_299/fill/w_116,h_61,al_c,q_85,usm_0.66_1.00_0.01/readrite.webp"
-              />
+              width="61" height="116" />
               Read Rite
             </div>
         </div>`;

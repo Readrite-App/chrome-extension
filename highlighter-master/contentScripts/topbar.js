@@ -431,19 +431,19 @@ client.get('https://readrite.uc.r.appspot.com/v1/claims?article_url='+ window.lo
 
     // var numList = [4, 2, 3, 0, 1];
 
-    for (i = 0; i < prehighlightArrayKeys.length; i++) {
-      console.log("Looking for: " + prehighlightArrayKeys[prehighlightArrayKeys.length-i-1]);
-      console.log("A- Prehighlight");
-      prehighlight(prehighlightArrayKeys[prehighlightArrayKeys.length-i-1]);
-      console.log("B- Prehighlight");
-      prehighlight(prehighlightArrayKeys[prehighlightArrayKeys.length-i-1].replace(regex, subst));
-      console.log("C- Prehighlight");
-      prehighlight('"' + prehighlightArrayKeys[prehighlightArrayKeys.length-i-1].replace(regex, subst) + '"');
-      console.log("D- Prehighlight");
-      prehighlight('"' + prehighlightArrayKeys[prehighlightArrayKeys.length-i-1].replace(regex, subst) + ',"');
-      console.log("E- Prehighlight");
-      prehighlight('"' + prehighlightArrayKeys[prehighlightArrayKeys.length-i-1] + ',"');
-    }
+    // for (i = 0; i < prehighlightArrayKeys.length; i++) {
+    //   console.log("Looking for: " + prehighlightArrayKeys[prehighlightArrayKeys.length-i-1]);
+    //   console.log("A- Prehighlight");
+    //   prehighlight(prehighlightArrayKeys[prehighlightArrayKeys.length-i-1]);
+    //   console.log("B- Prehighlight");
+    //   prehighlight(prehighlightArrayKeys[prehighlightArrayKeys.length-i-1].replace(regex, subst));
+    //   console.log("C- Prehighlight");
+    //   prehighlight('"' + prehighlightArrayKeys[prehighlightArrayKeys.length-i-1].replace(regex, subst) + '"');
+    //   console.log("D- Prehighlight");
+    //   prehighlight('"' + prehighlightArrayKeys[prehighlightArrayKeys.length-i-1].replace(regex, subst) + ',"');
+    //   console.log("E- Prehighlight");
+    //   prehighlight('"' + prehighlightArrayKeys[prehighlightArrayKeys.length-i-1] + ',"');
+    // }
 
     // console.log("Looking for: " + prehighlightArrayKeys[prehighlightArrayKeys.length-0-1]);
     // prehighlight(prehighlightArrayKeys[prehighlightArrayKeys.length-0-1]);
@@ -473,6 +473,7 @@ client.get('https://readrite.uc.r.appspot.com/v1/claims?article_url='+ window.lo
     recread["bias"]= recreadjson["bias"];
     recread["reliability"]= recreadjson["reliability"];
     recread["updateDate"]= new Date(recreadjson["updateDate"]);
+    recread["summary"] = recreadjson["summary"];
     // recread["author"]= recreadjson["author"];
     // if (recread["author"]) {
     //   if (recread["author"].length == 1) {
@@ -530,6 +531,16 @@ client.get('https://readrite.uc.r.appspot.com/v1/claims?article_url='+ window.lo
     var Difference_In_Time = compDate.getTime() - articleLastUpdated.getTime(); 
     var Difference_In_Days = Difference_In_Time / (1000 * 3600 * 24);
     var isStale = Difference_In_Days > 14;
+    client.get('https://readrite.uc.r.appspot.com/v2/articles?article_url=' + window.location.href, function(response) {
+      console.log("STALECHECKING");
+      var responseJson = JSON.parse(response);
+      var staleness = responseJson['article_data']['staleness'];
+      console.log(staleness);
+      if(staleness == "likely not stale") {
+        isStale = false;
+      } else if (staleness == "likely stale") {
+        isStale = true;
+      }
 
 
     var settings = {
@@ -941,7 +952,7 @@ button {
       <div class=\"position-3\" style=\"width:` + rightPerc.toString() + `%\">R: ` + numRight + `</div>
    </div>
    <ul class=\"main-nav\">
-      <li data-tooltip=\"` + (recread["title"] == null ? '' : recread["title"]) + (recread["bias"] == null ? '' : ' &#xa;Bias: ' + recread["bias"]) + (recread["reliability"] == null ? '' : ' Reliability: ' + recread["reliability"]) + `\"
+      <li data-tooltip=\"` + (recread["title"] == null ? '' : recread["title"]) + (recread["bias"] == null ? '' : ' &#xa;Bias: ' + recread["bias"]) + (recread["reliability"] == null ? '' : ' Reliability: ' + recread["reliability"]) + (recread["summary"] == null ? '' : ' &#xa;Summary: ' + recread["summary"]) + `\"
        data-tooltip-location=\"bottom\"><a href=\"` + recread["url"] + `\" target=\"_blank\"><b>Recommended Read:&nbsp</b> <img src=\"//logo.clearbit.com/` + recread["domain"] + `\" alt=\"\" class=\"image--cover\"/></a></li>
       <li data-tooltip=\"` + (altpersp["title"] == null ? '' : altpersp["title"]) + (altpersp["bias"] == null ? '' : ' &#xa;Bias: ' + altpersp["bias"]) + (altpersp["reliability"] == null ? '' : ' Reliability: ' + altpersp["reliability"]) + `\"
        data-tooltip-location=\"bottom\"><a href=\"` + altpersp["url"] + `\" target=\"_blank\"><b>Alternative Perspective:&nbsp</b> <img src=\"//logo.clearbit.com/` + altpersp["domain"] + `\" alt=\"\" class=\"image--cover\"/></a></li>
@@ -1208,5 +1219,6 @@ button {
 // // document.head.appendChild(styleSheet)
 
 // window.document.body.insertBefore(elemDiv, window.document.body.firstChild);
+});
 });
 });
